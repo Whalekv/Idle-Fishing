@@ -75,36 +75,38 @@
     mini.appendChild(counter);
     mini.appendChild(close);
 
+    // ===== 关键修复：强制让 mini 可裁剪 =====
+    mini.style.overflow = 'hidden !important';
+    mini.style.clipPath = 'inset(0 0 0 0 round 16px)';  // 替代 border-radius，隐藏时保持圆角裁剪
+
     // 创建鱼漂（bobber）
     const bobber = document.createElement('div');
     bobber.className = 'happy-fishing-bobber';
     bobber.style.cssText = `
       all: initial ;
-      position: absolute ;
-      bottom: 20px ;
-      left: 50% ;
-      transform: translateX(-50%);
+      position: absolute !important;
+      bottom: 10px !important;
+      left: 50% !important;
       width: 4px !important;
       height: 38px !important;
       background: url('${chrome.runtime.getURL('fishingFloat.svg')}') center/cover no-repeat !important;
       pointer-events: none !important;
       z-index: 3 !important;
+      contain: layout style !important;   // 加上这行，强制建立新的层，彻底解决裁剪失效
     `;
-    mini.appendChild(bobber);
-    
-    // JS 浮动动画
-    let bobberPhase = 0;
-    const bobberAnimate = () => {
-      if (!mini || !bobber.parentNode) return;  // 已移除则停止
-      
-      bobberPhase = (bobberPhase + 0.01) % (Math.PI * 2);
-      const offsetY = Math.sin(bobberPhase) * 15;  // -15px ~ +15px
-      bobber.style.transform = `translateX(-50%) translateY(${offsetY}px)`;
-      requestAnimationFrame(bobberAnimate); 
-    };
-    bobberAnimate();  // 启动
 
-    
+    mini.appendChild(bobber);
+
+    // 动画：正值向下沉（会被裁剪），负值向上浮
+    let bobberPhase = Math.random() * Math.PI * 2;
+    const bobberAnimate = () => {
+      if (!mini || !bobber.parentNode) return;
+      bobberPhase = (bobberPhase + 0.02) % (Math.PI * 2);
+      const offsetY = Math.sin(bobberPhase) * 30;   // 22px 足够让它完全沉下去
+      bobber.style.transform = `translateX(-50%) translateY(${offsetY}px)`;
+      requestAnimationFrame(bobberAnimate);
+    };
+    bobberAnimate();
 
     document.documentElement.appendChild(mini);
     // 启动全局倒计时
@@ -165,3 +167,4 @@
 })();
 
 
+// height: 38px ;
