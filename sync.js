@@ -9,6 +9,7 @@
   const KEY_END = 'happy-fishing-end';
   let mini = null;
   let counter = null;
+  let sinkRequestId = null;
   // 创建小窗
   function spawn({x, y}) {
     if (mini) mini.remove();
@@ -60,8 +61,11 @@
       cursor: pointer !important;
       z-index: 2 !important;
     `;
-
-
+    mini.onclick = (e) => {
+      e.stopPropagation();
+      console.log('点击小窗');
+      bobberSinkDown();
+    };
     // 关闭时：1. 删除 DOM  2. 清除 localStorage  3. 广播 null
     close.onclick = (e) => {
       e.stopPropagation();
@@ -75,8 +79,6 @@
     mini.appendChild(counter);
     mini.appendChild(close);
 
-    // ===== 关键修复：强制让 mini 可裁剪 =====
-    mini.style.overflow = 'hidden !important';
     mini.style.clipPath = 'inset(0 0 0 0 round 16px)';  // 替代 border-radius，隐藏时保持圆角裁剪
 
     // 创建鱼漂（bobber）
@@ -85,30 +87,51 @@
     bobber.style.cssText = `
       all: initial ;
       position: absolute !important;
-      bottom: 10px !important;
+      bottom: 0px !important;
       left: 50% !important;
       width: 4px !important;
       height: 38px !important;
       background: url('${chrome.runtime.getURL('fishingFloat.svg')}') center/cover no-repeat !important;
       pointer-events: none !important;
       z-index: 3 !important;
-      contain: layout style !important;   // 加上这行，强制建立新的层，彻底解决裁剪失效
+      contain: layout style !important;
+      transform: translateX(-50%);
     `;
 
     mini.appendChild(bobber);
 
     // 动画：正值向下沉（会被裁剪），负值向上浮
-    let bobberPhase = Math.random() * Math.PI * 2;
-    const bobberAnimate = () => {
+    window.bobberSinkDown = () => {
       if (!mini || !bobber.parentNode) return;
-      bobberPhase = (bobberPhase + 0.02) % (Math.PI * 2);
-      const offsetY = Math.sin(bobberPhase) * 30;   // 22px 足够让它完全沉下去
-      bobber.style.transform = `translateX(-50%) translateY(${offsetY}px)`;
-      requestAnimationFrame(bobberAnimate);
+
+      // 彻底干掉任何旧动画和 CSS transition 干扰
+      if (sinkRequestId) cancelAnimationFrame(sinkRequestId);
+      const targetY = 40;
+      const duration = 1600;
+      const start = performance.now();
+      const animate = (now) => {
+        if (!mini || !bobber.parentNode) return;
+        const elapsed = now - start;
+        const progress = Math.min(elapsed / duration, 1);
+        const ease = 1 - Math.pow(1 - progress, 3);
+        const y = ease * targetY;
+
+        bobber.style.transform = `translateX(-50%) translateY(${y}px)`;
+
+        if (progress < 1) {
+          sinkRequestId = requestAnimationFrame(animate);
+        } else {
+          sinkRequestId = null;
+        }
+      };
+
+      sinkRequestId = requestAnimationFrame(animate);
     };
-    bobberAnimate();
+    
 
     document.documentElement.appendChild(mini);
+
+    
     // 启动全局倒计时
     startGlobalCountdown();
   }
@@ -117,10 +140,11 @@
   function startGlobalCountdown() {
     // 第一次创建时，设置结束时间
     if (!localStorage.getItem(KEY_END)) {
-      const endTime = Date.now() + 10000;
+      const endTime = Date.now() + 3000;
       localStorage.setItem(KEY_END, endTime);
     }
 
+    let animationId = null;
     const update = () => {
       if (!mini) return;
 
@@ -129,15 +153,22 @@
 
       if (left > 0) {
         counter.textContent = left;
-        const deg = (10 - left) * 36;
+        const deg = (3 - left) * 120;
         mini.style.background = `conic-gradient(#00d1ff ${deg}deg, #f2ff00ff 0)`;
       } else {
         counter.textContent = 'Finish';
         mini.style.background = '#4caf50';
+        console.log('计时器运行');
+        // 计时结束 → 停止动画循环
+        if (animationId !== null) {
+            cancelAnimationFrame(animationId);
+            animationId = null;
+        }
         localStorage.removeItem(KEY_END);
+        return; 
       }
 
-      requestAnimationFrame(update);
+      animationId = requestAnimationFrame(update);
     };
     update();
   }
@@ -166,5 +197,3 @@
   window.happyFishingSpawn = spawn;
 })();
 
-
-// height: 38px ;
