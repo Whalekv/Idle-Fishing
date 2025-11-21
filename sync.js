@@ -20,7 +20,8 @@
       position: fixed !important;
       left: ${x - 25}px !important;
       top: ${y - 25}px !important;
-      width: 100px !important; height: 100px !important;
+      width: 200px !important; 
+      height: 100px !important;
       background: linear-gradient(135deg, #00d1ff, #0099cc) ;
       border-radius: 16px !important;
       box-shadow: 0 8px 30px rgba(0,209,255,0.5) !important;
@@ -61,6 +62,21 @@
       cursor: pointer !important;
       z-index: 2 !important;
     `;
+    // 钓鱼按钮
+    const btn = document.createElement('button');
+    btn.style.cssText = `
+      all: initial !important;
+      width: 30px !important;
+      height: 30px !important;
+      position: absolute !important;
+      left: 10px !important;
+      background: #ef2baeff !important;
+    `
+    btn.onclick = (e) =>{
+      e.stopPropagation();
+      window.createSuccessWin();
+    };
+
     mini.onclick = (e) => {
       e.stopPropagation();
       console.log('点击小窗');
@@ -76,6 +92,7 @@
       localStorage.setItem(KEY_POS + ':remove', Date.now()); // 触发广播
     };
 
+    mini.appendChild(btn);
     mini.appendChild(counter);
     mini.appendChild(close);
 
@@ -100,7 +117,7 @@
 
     mini.appendChild(bobber);
 
-    // 动画：正值向下沉（会被裁剪），负值向上浮
+    // 动画：鱼漂下沉
     window.bobberSinkDown = () => {
       if (!mini || !bobber.parentNode) return;
 
