@@ -19,9 +19,8 @@
       top: ${y - 25}px !important;
       width: 200px !important; 
       height: 100px !important;
-      background: linear-gradient(135deg, #00d1ff, #0099cc) ;
+      background: transparent !important;
       border-radius: 16px !important;
-      box-shadow: 0 8px 30px rgba(0,209,255,0.5) !important;
       display: flex !important;
       justify-content: center !important;
       align-items: center !important;
@@ -43,13 +42,13 @@
     `
     btn.onclick = (e) =>{
       e.stopPropagation();
-      window.createSuccessWin();
+      bobberSinkDown();
+      
     };
 
     mini.onclick = (e) => {
       e.stopPropagation();
       console.log('点击小窗');
-      bobberSinkDown();
     };
     mini.appendChild(btn);
 
@@ -78,7 +77,6 @@
     // 动画：鱼漂下沉
     window.bobberSinkDown = () => {
       if (!mini || !bobber.parentNode) return;
-
       // 彻底干掉任何旧动画和 CSS transition 干扰
       if (sinkRequestId) cancelAnimationFrame(sinkRequestId);
       const targetY = 40;
@@ -97,13 +95,93 @@
           sinkRequestId = requestAnimationFrame(animate);
         } else {
           sinkRequestId = null;
+          bite();
         }
       };
-
       sinkRequestId = requestAnimationFrame(animate);
     };
+
+// 指示器 - 每隔 5-10 秒随机平滑切换到红/黄/绿中的一种
+    const indicator = document.createElement('div');
+    indicator.className = 'happy-fishing-indicator';
+    indicator.style.cssText = `
+      width: 40px !important;
+      height: 40px !important;
+      border-radius: 50% !important;
+      background: rgba(255, 0, 0, 0.5);
+      box-shadow:
+        0 0 15px rgba(255, 0, 0, 0.8),
+        0 0 40px rgba(255, 0, 0, 0.6),
+        0 0 60px rgba(255, 0, 0, 0.4);
+      pointer-events: none !important;
+      transition: background 1s ease, box-shadow 1s ease;
+    `;
+
+    // 注入三种颜色定义（只执行一次）
+    if (!window.happyFishingRandomInjected) {
+      const style = document.createElement('style');
+      style.textContent = `
+        .happy-fishing-indicator.red    { background: rgba(255, 0, 0, 0.5) !important;   box-shadow: 0 0 15px rgba(255,0,0,0.8),   0 0 40px rgba(255,0,0,0.6),   0 0 60px rgba(255,0,0,0.4) !important; }
+        .happy-fishing-indicator.yellow { background: rgba(255, 255, 0, 0.5) !important; box-shadow: 0 0 15px rgba(255,255,0,0.8), 0 0 40px rgba(255,255,0,0.6), 0 0 60px rgba(255,255,0,0.4) !important; }
+        .happy-fishing-indicator.green  { background: rgba(0, 255, 0, 0.5) !important;   box-shadow: 0 0 15px rgba(0,255,0,0.8),   0 0 40px rgba(0,255,0,0.6),   0 0 60px rgba(0,255,0,0.4) !important; }
+      `;
+      document.head.appendChild(style);
+      window.happyFishingRandomInjected = true;
+    }
+
+    const colors = ['red', 'yellow', 'green'];
+    let timer = null;
+
+    // 随机切换颜色函数
+    function randomChangeColor() {
+      if (!indicator.parentNode) return; // 已移除则停止
+
+      // 移除当前所有颜色类
+      indicator.classList.remove('red', 'yellow', 'green');
+
+      // 触发重排，保证每次 transition 都生效
+      void indicator.offsetLeft;
+
+      // 随机选择一种颜色
+      const nextColor = colors[Math.floor(Math.random() * colors.length)];
+      indicator.classList.add(nextColor);
+
+      // 随机 5~10 秒后再次切换
+      const nextDelay = 5000 + Math.random() * 5000; // 5000~10000ms
+      timer = setTimeout(randomChangeColor, nextDelay);
+    }
+
+    // 鱼咬钩后开始自动随机切换
+    const bite = () => {
+      if (!mini || indicator.parentNode) return;
+
+      // 重置为红色并显示
+      indicator.className = 'happy-fishing-indicator red';
+      mini.appendChild(indicator);
+
+      // 清除可能遗留的定时器（防止多 Tab 重复触发）
+      if (timer) clearTimeout(timer);
+
+      // 首次延迟 5~10 秒后开始第一次随机切换
+      const firstDelay = 5000 + Math.random() * 5000;
+      timer = setTimeout(randomChangeColor, firstDelay);
+    };
+
+    // 重要：当小窗被移除时停止定时器，防止内存泄漏
+    const originalRemoveMiniWin = window.RemoveMiniWin;
+    window.RemoveMiniWin = () => {
+      if (timer) {
+        clearTimeout(timer);
+        timer = null;
+      }
+      if (indicator.parentNode) indicator.remove();
+      originalRemoveMiniWin?.();
+    };
+
     document.documentElement.appendChild(mini);
   };
+
+  
 
   // 页面刷新后或打开新的标签页后读取已有坐标
   const saved = localStorage.getItem(KEY_POS);
