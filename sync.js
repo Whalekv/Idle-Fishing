@@ -72,7 +72,152 @@
       transform: translateX(-50%);
     `;
 
+
     mini.appendChild(bobber);
+
+
+    // ===== 第一步：添加 SVG 进度条外框（固定颜色，待后续动画） =====
+    const progressSVG = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+    progressSVG.className = 'happy-fishing-progress-svg';
+    progressSVG.setAttribute('viewBox', '0 0 200 100');
+    progressSVG.style.cssText = `
+      all: initial !important;
+      position: absolute !important;
+      inset: 0 !important;
+      width: 100% !important;
+      height: 100% !important;
+      pointer-events: none !important;
+      z-index: 4 !important;   /* 放在 bobber 和 indicator 上面，但低于按钮 */
+    `;
+
+    const progressRect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+    progressRect.setAttribute('x', '2');      // 向内偏移 2px，让 4px 粗的线正好贴边且不被裁剪
+    progressRect.setAttribute('y', '2');
+    progressRect.setAttribute('width', '196');
+    progressRect.setAttribute('height', '96');
+    progressRect.setAttribute('rx', '14');    // 16 - 2 = 14（因为 stroke 在内外各占一半，往内缩 2px 后圆角也要相应减小）
+    progressRect.setAttribute('ry', '14');
+    progressRect.setAttribute('fill', 'none');
+    progressRect.setAttribute('stroke', '#b1b1b1ff');   // 先用绿色方便看见
+    progressRect.setAttribute('stroke-width', '4');
+    progressRect.setAttribute('stroke-linecap', 'round');
+
+    progressSVG.appendChild(progressRect);
+    mini.appendChild(progressSVG);
+
+    // 把这个 path 暴露到全局，方便后面第二步直接操作（不需要再 query）
+    window.happyFishingProgressPath = progressRect;
+    // ============================================================
+
+
+    // ===== 第二步：长按进度条动画（先不改颜色）=====
+    let progress = 0;
+    let progressRaf = null;
+    let isPressing = false;
+
+    // 获取路径总长度（关键修复）
+    const path = progressRect;
+    let totalLength = null;
+
+    const initProgressPath = () => {
+      if (totalLength !== null) return;
+      totalLength = path.getTotalLength();
+      path.style.strokeDasharray = totalLength;
+      path.style.strokeDashoffset = totalLength;
+      console.log('Progress path initialized, length =', totalLength);
+    };
+
+    requestAnimationFrame(initProgressPath);
+    setTimeout(initProgressPath, 100); // 双保险
+
+    // 更新视觉进度
+        // 更新视觉进度 + 动态颜色
+    // 更新视觉进度 + 动态颜色（基于左上角起点，顺时针）
+    const updateProgress = () => {
+      if (totalLength === null) return;
+
+      const offset = totalLength * (1 - progress);
+      path.style.strokeDashoffset = offset;
+
+      const headRatio = progress; // 0~1
+
+      // 精确比例（基于 200×100 + rx=14 的路径，实测恒定）
+      const topSideEnd    = 0.304;  // 0 ~ 30.4%    → 上边（从左上角到右上角）
+      const rightSideEnd  = 0.478;  // 30.4% ~ 47.8% → 右边
+      const bottomSideEnd = 0.826;  // 47.8% ~ 82.6% → 下边
+      // 82.6% ~ 100% → 左边
+
+      let color;
+      if (headRatio < topSideEnd) {
+        color = '#ff0000';     // 红色 - 上边框
+      } else if (headRatio < rightSideEnd) {
+        color = '#ffff00';     // 黄色 - 右边框
+      } else if (headRatio < bottomSideEnd) {
+        color = '#ffff00';     // 黄色 - 下边框
+      } else {
+        color = '#00ff00';     // 绿色 - 左边框
+      }
+
+      path.style.stroke = color;
+    };
+
+    // 前进动画（长按时）
+    const progressForward = () => {
+      progress = Math.min(progress + 0.0008, 1);   // 约 2.0~2.2 秒填满，可调速度
+      updateProgress();
+
+      if (progress < 1 && isPressing) {
+        progressRaf = requestAnimationFrame(progressForward);
+      } else if (progress >= 1) {
+        // 进度满时自动触发钓鱼成功（可选，你可以先注释掉试试）
+        // if (window.createSuccessWin) window.createSuccessWin();
+      }
+    };
+
+    // 回退动画（松手时）
+    const progressBackward = () => {
+      progress = Math.max(progress - 0.002, 0);   // 回退稍慢一点，手感更好
+      updateProgress();
+
+      if (progress > 0) {
+        progressRaf = requestAnimationFrame(progressBackward);
+      }
+    };
+
+    // 开始长按
+    const startPress = (e) => {
+      if (e.button !== 0) return;  // 只响应左键
+      e.stopPropagation();         // 防止触发 mini 的 onclick
+      if (progressRaf) cancelAnimationFrame(progressRaf);
+      isPressing = true;
+      progressForward();
+    };
+
+    // 结束长按
+    const endPress = () => {
+      if (!isPressing) return;
+      isPressing = false;
+      if (progressRaf) cancelAnimationFrame(progressRaf);
+      progressBackward();
+    };
+
+    // 绑定事件（支持鼠标 + 触摸）
+    mini.addEventListener('mousedown', startPress);
+    mini.addEventListener('mouseup', endPress);
+    mini.addEventListener('mouseleave', endPress);
+
+    mini.addEventListener('touchstart', (e) => {
+      e.preventDefault();  // 防止页面滚动
+      startPress(e);
+    }, { passive: false });
+    mini.addEventListener('touchend', endPress);
+    mini.addEventListener('touchcancel', endPress);
+
+    // 暴露方便调试（可选）
+    window.happyFishingProgress = { progress: () => progress, reset: () => { progress = 0; updateProgress(); } };
+    // ================================================
+
+
 
     // 动画：鱼漂下沉
     window.bobberSinkDown = () => {
@@ -177,6 +322,8 @@
       if (indicator.parentNode) indicator.remove();
       originalRemoveMiniWin?.();
     };
+
+
 
     document.documentElement.appendChild(mini);
   };
