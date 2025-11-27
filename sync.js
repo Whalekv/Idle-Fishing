@@ -234,7 +234,7 @@
 
       matchScoreTimer = setInterval(() => {
         // 必须同时满足：正在长按 + indicator 已经出现
-        if (!isPressing || !indicator || !indicator.parentNode) {
+        if (progress==0 || progress == 1 || !indicator || !indicator.parentNode) {
           return;
         }
 
@@ -271,9 +271,11 @@
 
     mini.addEventListener('mouseup', () => {
       endPress();  // ← 改成调用我们自己的 endPress
+      startMatchScoreTick();
     });
     mini.addEventListener('mouseleave', () => {
       endPress();
+      startMatchScoreTick();
     });
 
     mini.addEventListener('touchstart', (e) => {
