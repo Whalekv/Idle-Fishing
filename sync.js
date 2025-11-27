@@ -7,6 +7,8 @@
   const KEY_POS = 'happy-fishing-pos';
   let mini = null;
   let sinkRequestId = null;
+
+
   // 创建小窗
   function spawn({x, y}) {
     if (mini) mini.remove();
@@ -115,6 +117,9 @@
     let progressRaf = null;
     let isPressing = false;
 
+    let matchScore = 0;  // 新增：匹配度 0~100
+    window.happyFishingMatchScore = matchScore; // 【可选】方便调试观察数值
+
     // 获取路径总长度（关键修复）
     const path = progressRect;
     let totalLength = null;
@@ -130,8 +135,6 @@
     requestAnimationFrame(initProgressPath);
     setTimeout(initProgressPath, 100); // 双保险
 
-    // 更新视觉进度
-        // 更新视觉进度 + 动态颜色
     // 更新视觉进度 + 动态颜色（基于左上角起点，顺时针）
     const updateProgress = () => {
       if (totalLength === null) return;
@@ -161,6 +164,46 @@
       path.style.stroke = color;
     };
 
+
+    // ===== 新增：根据当前 progress 值返回进度条头部当前颜色 =====
+    function getCurrentProgressColor() {
+      const headRatio = progress; // 0 ~ 1
+
+      const topSideEnd    = 0.304;    // 上边：红
+      const rightSideEnd  = 0.478;    // 右边：黄
+      const bottomSideEnd = 0.826;    // 下边：黄
+
+      if (headRatio < topSideEnd) {
+        return 'red';
+      } else if (headRatio < rightSideEnd) {
+        return 'yellow';
+      } else if (headRatio < bottomSideEnd) {
+        return 'yellow';
+      } else {
+        return 'green';  // 左边：绿
+      }
+    }
+
+    // ===== 新增：获取当前 indicator 的颜色 =====
+    function getCurrentIndicatorColor() {
+      if (!indicator || !indicator.parentNode) {
+        return null; // 还没咬钩，还没有 indicator
+      }
+
+      if (indicator.classList.contains('red')) {
+        return 'red';
+      }
+      if (indicator.classList.contains('yellow')) {
+        return 'yellow';
+      }
+      if (indicator.classList.contains('green')) {
+        return 'green';
+      }
+
+      // 兜底（正常不会走到这里）
+      return null;
+    }
+
     // 前进动画（长按时）
     const progressForward = () => {
       progress = Math.min(progress + 0.0008, 1);   // 约 2.0~2.2 秒填满，可调速度
@@ -168,9 +211,6 @@
 
       if (progress < 1 && isPressing) {
         progressRaf = requestAnimationFrame(progressForward);
-      } else if (progress >= 1) {
-        // 进度满时自动触发钓鱼成功（可选，你可以先注释掉试试）
-        // if (window.createSuccessWin) window.createSuccessWin();
       }
     };
 
@@ -184,34 +224,82 @@
       }
     };
 
-    // 开始长按
-    const startPress = (e) => {
-      if (e.button !== 0) return;  // 只响应左键
-      e.stopPropagation();         // 防止触发 mini 的 onclick
-      if (progressRaf) cancelAnimationFrame(progressRaf);
-      isPressing = true;
-      progressForward();
-    };
+    // ===== 第四步：定时检测颜色匹配并更新 matchScore =====
+    let matchScoreTimer = null;
+    // 每隔随机 100~200ms 检查一次匹配状态
+    function startMatchScoreTick() {
+      if (matchScoreTimer) clearInterval(matchScoreTimer);
 
-    // 结束长按
-    const endPress = () => {
-      if (!isPressing) return;
-      isPressing = false;
-      if (progressRaf) cancelAnimationFrame(progressRaf);
-      progressBackward();
-    };
+      const tickInterval = 100 + Math.random() * 100; // 100~200ms 随机，防止太规律
+
+      matchScoreTimer = setInterval(() => {
+        // 必须同时满足：正在长按 + indicator 已经出现
+        if (!isPressing || !indicator || !indicator.parentNode) {
+          return;
+        }
+
+        const progressColor = getCurrentProgressColor();
+        const indicatorColor = getCurrentIndicatorColor();
+
+        // 只有两者都是有效颜色时才进行匹配判断
+        if (progressColor && indicatorColor) {
+          if (progressColor === indicatorColor) {
+            // 颜色匹配：上升（每 tick +0.9，约 1.0~1.8 秒从 0 到 100）
+            matchScore = Math.min(100, matchScore + 0.9);
+          } else {
+            // 颜色不匹配：下降更快（增加紧张感）
+            matchScore = Math.max(0, matchScore - 1.8);
+          }
+
+          // 【可选】调试时查看实时数值
+          console.log('matchScore:', matchScore.toFixed(1), progressColor, indicatorColor);
+        }
+      }, tickInterval);
+    }
+
 
     // 绑定事件（支持鼠标 + 触摸）
-    mini.addEventListener('mousedown', startPress);
-    mini.addEventListener('mouseup', endPress);
-    mini.addEventListener('mouseleave', endPress);
+    // 绑定事件（支持鼠标 + 触摸）
+    mini.addEventListener('mousedown', (e) => {
+      e.preventDefault();
+      isPressing = true;
+      if (progressRaf) cancelAnimationFrame(progressRaf);
+      progressRaf = requestAnimationFrame(progressForward);
+      
+      startMatchScoreTick();  // ← 新增：开始计时
+    });
+
+    mini.addEventListener('mouseup', () => {
+      endPress();  // ← 改成调用我们自己的 endPress
+    });
+    mini.addEventListener('mouseleave', () => {
+      endPress();
+    });
 
     mini.addEventListener('touchstart', (e) => {
-      e.preventDefault();  // 防止页面滚动
-      startPress(e);
+      e.preventDefault();
+      isPressing = true;
+      if (progressRaf) cancelAnimationFrame(progressRaf);
+      progressRaf = requestAnimationFrame(progressForward);
+      
+      startMatchScoreTick();  // ← 新增
     }, { passive: false });
+
     mini.addEventListener('touchend', endPress);
     mini.addEventListener('touchcancel', endPress);
+
+    // 新增一个干净的 endPress 函数
+    function endPress() {
+      isPressing = false;
+      if (progressRaf) cancelAnimationFrame(progressRaf);
+      progressRaf = requestAnimationFrame(progressBackward);
+
+      // 停止并清零 matchScore
+      if (matchScoreTimer) {
+        clearInterval(matchScoreTimer);
+        matchScoreTimer = null;
+      }
+    }
 
     // 暴露方便调试（可选）
     window.happyFishingProgress = { progress: () => progress, reset: () => { progress = 0; updateProgress(); } };
