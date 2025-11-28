@@ -3,11 +3,29 @@
   if (window.happyFishingReady) return;
   window.happyFishingReady = true;
 
+
+  // ==================== 新增：鱼表 ====================
+  const fishTable = [
+    { name: "小虾米",    rarity: 1, weightMin: 0.05, weightMax: 0.3,  sinkTime: 1500, difficulty: 1 },
+    { name: "鲫鱼",      rarity: 2, weightMin: 0.3,  weightMax: 1.5,  sinkTime: 2000, difficulty: 2 },
+    { name: "草鱼",      rarity: 3, weightMin: 2,    weightMax: 8,    sinkTime: 3000, difficulty: 4 },
+    { name: "青鱼",      rarity: 4, weightMin: 10,   weightMax: 25,   sinkTime: 4000, difficulty: 6 },
+    { name: "鲢鱼",      rarity: 5, weightMin: 15,   weightMax: 40,   sinkTime: 5000, difficulty: 8 },
+    { name: "金龙鱼",    rarity: 6, weightMin: 30,   weightMax: 100,  sinkTime: 6000, difficulty: 10 }
+  ];
+
+  // 根据稀有度加权随机（稀有度越高概率越低）
+  const totalWeight = fishTable.reduce((sum, fish) => sum + (7 - fish.rarity), 0);
+  // ===================================================
+
+
   // 位置
   const KEY_POS = 'happy-fishing-pos';
   let mini = null;
   let sinkRequestId = null;
 
+  // 当前这一次钓鱼抽到的鱼（在点按钮时决定）
+  let currentFish = null;
 
   // 创建小窗
   function spawn({x, y}) {
@@ -32,7 +50,8 @@
       color: white !important;
       user-select: none !important;
     `;
-    // 钓鱼按钮
+    // ==================== 修改钓鱼按钮行为 ====================
+    // 把原来的 btn.onclick 整个替换成下面这段
     const btn = document.createElement('button');
     btn.style.cssText = `
       all: initial !important;
@@ -41,18 +60,60 @@
       position: absolute !important;
       left: 10px !important;
       background: #ef2baeff !important;
-    `
-    btn.onclick = (e) =>{
+      border-radius: 50% !important;
+      cursor: pointer !important;
+    `;
+    btn.onclick = (e) => {
       e.stopPropagation();
-      bobberSinkDown();
-      
-    };
 
-    mini.onclick = (e) => {
-      e.stopPropagation();
-      console.log('点击小窗');
+      // 1. 防止重复点击
+      if (sinkRequestId) return;
+      
+      // 2. 加权随机选鱼
+      let rand = Math.random() * totalWeight;
+      let selected = fishTable[0];
+      for (const fish of fishTable) {
+        rand -= (7 - fish.rarity);
+        if (rand <= 0) {
+          selected = fish;
+          break;
+        }
+      }
+      currentFish = selected;
+
+      // 3. 生成最终鱼对象（重量随机）
+      const finalWeight = (Math.random() * (selected.weightMax - selected.weightMin) + selected.weightMin).toFixed(2);
+
+      // 颜色色相：稀有度越高越偏金色（0~60），低稀有度偏蓝绿
+      const hue = selected.rarity <= 3 ? 180 + selected.rarity * 30 : selected.rarity * 10;
+
+      const caughtFish = {
+        name: selected.name,
+        rarity: selected.rarity,
+        weight: parseFloat(finalWeight),
+        timestamp: Date.now(),
+        signature: "玩家昵称#1234",
+        colorHue: hue,
+        sizeLevel: selected.rarity  // 暂时用稀有度当尺寸等级
+      };
+
+      // 4. 延迟执行下沉动画（模拟鱼上钩时间）
+      setTimeout(() => {
+        bobberSinkDown(() => {
+          // 下沉动画完全结束后的回调
+          console.log("钓到鱼啦！", caughtFish);
+          
+          // 调用成功窗口（success.js 里已经暴露的全局函数）
+          if (window.createSuccessWin) {
+            // 可以把鱼信息临时挂到全局，successWin 里自行读取展示
+            window.lastCaughtFish = caughtFish;
+            createSuccessWin();
+          }
+        });
+      }, currentFish.sinkTime);
     };
     mini.appendChild(btn);
+    // ========================================================
 
 
     mini.style.clipPath = 'inset(0 0 0 0 round 16px)';  // 替代 border-radius，隐藏时保持圆角裁剪
@@ -76,6 +137,35 @@
 
 
     mini.appendChild(bobber);
+
+
+    // 修改原来的 bobberSinkDown，让它支持完成回调
+    window.bobberSinkDown = (onComplete) => {
+      if (!mini || !bobber.parentNode) return;
+
+      if (sinkRequestId) cancelAnimationFrame(sinkRequestId);
+      const targetY = 40;
+      const duration = 1600;
+      const start = performance.now();
+
+      const animate = (now) => {
+        if (!mini || !bobber.parentNode) return;
+        const elapsed = now - start;
+        const progress = Math.min(elapsed / duration, 1);
+        const ease = 1 - Math.pow(1 - progress, 3);
+        const y = ease * targetY;
+
+        bobber.style.transform = `translateX(-50%) translateY(${y}px)`;
+
+        if (progress < 1) {
+          sinkRequestId = requestAnimationFrame(animate);
+        } else {
+          sinkRequestId = null;
+          if (typeof onComplete === 'function') onComplete();
+        }
+      };
+      sinkRequestId = requestAnimationFrame(animate);
+    };
 
 
     // ===== 第一步：添加 SVG 进度条外框（固定颜色，待后续动画） =====
@@ -307,36 +397,7 @@
     window.happyFishingProgress = { progress: () => progress, reset: () => { progress = 0; updateProgress(); } };
     // ================================================
 
-
-
-    // 动画：鱼漂下沉
-    window.bobberSinkDown = () => {
-      if (!mini || !bobber.parentNode) return;
-      // 彻底干掉任何旧动画和 CSS transition 干扰
-      if (sinkRequestId) cancelAnimationFrame(sinkRequestId);
-      const targetY = 40;
-      const duration = 1600;
-      const start = performance.now();
-      const animate = (now) => {
-        if (!mini || !bobber.parentNode) return;
-        const elapsed = now - start;
-        const progress = Math.min(elapsed / duration, 1);
-        const ease = 1 - Math.pow(1 - progress, 3);
-        const y = ease * targetY;
-
-        bobber.style.transform = `translateX(-50%) translateY(${y}px)`;
-
-        if (progress < 1) {
-          sinkRequestId = requestAnimationFrame(animate);
-        } else {
-          sinkRequestId = null;
-          bite();
-        }
-      };
-      sinkRequestId = requestAnimationFrame(animate);
-    };
-
-// 指示器 - 每隔 5-10 秒随机平滑切换到红/黄/绿中的一种
+    // 指示器 - 每隔 5-10 秒随机平滑切换到红/黄/绿中的一种
     const indicator = document.createElement('div');
     indicator.className = 'happy-fishing-indicator';
     indicator.style.cssText = `

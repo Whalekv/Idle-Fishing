@@ -5,9 +5,18 @@
     let successWin = null;
     //钓鱼成功窗口
     function createSuccessWin(){
+
         successWin = document.createElement('div');
-        
-        successWin.textContent = '钓鱼成功';
+        successWin.innerHTML = `
+        <div style="margin-top:120px; line-height:1.4">
+            <div style="font-size:48px">钓鱼成功！</div>
+            ${window.lastCaughtFish ? `
+            <div style="font-size:36px; margin:20px 0">${window.lastCaughtFish.name}</div>
+            <div style="font-size:28px">重量：${window.lastCaughtFish.weight} kg</div>
+            <div style="font-size:24px; color:#fffa">稀有度：${'★'.repeat(window.lastCaughtFish.rarity)} ${window.lastCaughtFish.rarity}/6</div>
+            ` : ''}
+        </div>
+        `;
         successWin.style.cssText = `
             all: initial !important;
             position: fixed !important;
