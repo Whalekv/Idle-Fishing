@@ -4,28 +4,27 @@
   window.happyFishingReady = true;
 
 
-  // ==================== 新增：鱼表 ====================
+  // 鱼表
   const fishTable = [
-    { name: "小虾米",    rarity: 1, weightMin: 0.05, weightMax: 0.3,  sinkTime: 1500, difficulty: 1 },
-    { name: "鲫鱼",      rarity: 2, weightMin: 0.3,  weightMax: 1.5,  sinkTime: 2000, difficulty: 2 },
-    { name: "草鱼",      rarity: 3, weightMin: 2,    weightMax: 8,    sinkTime: 3000, difficulty: 4 },
-    { name: "青鱼",      rarity: 4, weightMin: 10,   weightMax: 25,   sinkTime: 4000, difficulty: 6 },
-    { name: "鲢鱼",      rarity: 5, weightMin: 15,   weightMax: 40,   sinkTime: 5000, difficulty: 8 },
-    { name: "金龙鱼",    rarity: 6, weightMin: 30,   weightMax: 100,  sinkTime: 6000, difficulty: 10 }
+    { name: "小虾米", rarity: 1, weightMin: 0.05, weightMax: 0.3,   sinkTime: 1500, difficulty: 1, scoreUpSpeed: 3,    scoreDownSpeed: 1   },
+    { name: "鲫鱼",   rarity: 2, weightMin: 0.3,  weightMax: 1.5,  sinkTime: 2000, difficulty: 2, scoreUpSpeed: 2,    scoreDownSpeed: 1.5 },
+    { name: "草鱼",   rarity: 3, weightMin: 2,    weightMax: 8,    sinkTime: 3000, difficulty: 4, scoreUpSpeed: 1.5,  scoreDownSpeed: 2   },
+    { name: "青鱼",   rarity: 4, weightMin: 10,   weightMax: 25,   sinkTime: 4000, difficulty: 6, scoreUpSpeed: 1,    scoreDownSpeed: 2.5 },
+    { name: "鲢鱼",   rarity: 5, weightMin: 15,   weightMax: 40,   sinkTime: 5000, difficulty: 8, scoreUpSpeed: 0.5,  scoreDownSpeed: 4   },
+    { name: "金龙鱼", rarity: 6, weightMin: 30,   weightMax: 100,  sinkTime: 6000, difficulty: 10,scoreUpSpeed: 0.3,  scoreDownSpeed: 6   }
   ];
 
   // 根据稀有度加权随机（稀有度越高概率越低）
   const totalWeight = fishTable.reduce((sum, fish) => sum + (7 - fish.rarity), 0);
-  // ===================================================
 
-
-  // 位置
-  const KEY_POS = 'happy-fishing-pos';
-  let mini = null;
-  let sinkRequestId = null;
-
-  // 当前这一次钓鱼抽到的鱼（在点按钮时决定）
-  let currentFish = null;
+  // 用于起鱼阶段的临时数据
+  window.pendingFish = null;            // 等待提竿成功的鱼
+  window.fishingStartTime = 0;          // 起鱼计时起点
+  const KEY_POS = 'happy-fishing-pos';  // 窗口位置    
+  let mini = null;                      // mini窗口
+  let sinkRequestId = null;             // 鱼漂下沉动画id
+  let currentFish = null;               // 当前这一次钓鱼抽到的鱼
+  let btn  = null;                      // 测试按钮
 
   // 创建小窗
   function spawn({x, y}) {
@@ -51,8 +50,7 @@
       user-select: none !important;
     `;
     // ==================== 修改钓鱼按钮行为 ====================
-    // 把原来的 btn.onclick 整个替换成下面这段
-    const btn = document.createElement('button');
+    btn = document.createElement('button');
     btn.style.cssText = `
       all: initial !important;
       width: 30px !important;
@@ -100,20 +98,23 @@
       // 4. 延迟执行下沉动画（模拟鱼上钩时间）
       setTimeout(() => {
         bobberSinkDown(() => {
-          // 下沉动画完全结束后的回调
-          console.log("钓到鱼啦！", caughtFish);
-          
-          // 调用成功窗口（success.js 里已经暴露的全局函数）
-          if (window.createSuccessWin) {
-            // 可以把鱼信息临时挂到全局，successWin 里自行读取展示
-            window.lastCaughtFish = caughtFish;
-            createSuccessWin();
-          }
+          // 下沉动画完全结束后：进入“起鱼准备状态”
+          // 1. 鱼漂固定在最底部不动
+          bobber.style.transform = `translateX(-50%) translateY(40px)`;
+
+          // 2. 启动指示器（开始随机切换颜色）
+          bite();
+
+          // 3. 保存这次要钓的鱼信息（等待最终判定）
+          window.pendingFish = caughtFish;        // 临时保存，成功后才真正使用
+          window.fishingStartTime = Date.now();   // 起鱼计时器开始
+
+          console.log("鱼已上钩！请在指示器变绿时长按起鱼（5秒内）", caughtFish);
         });
       }, currentFish.sinkTime);
     };
     mini.appendChild(btn);
-    // ========================================================
+      // ========================================================
 
 
     mini.style.clipPath = 'inset(0 0 0 0 round 16px)';  // 替代 border-radius，隐藏时保持圆角裁剪
@@ -322,9 +323,15 @@
 
       const tickInterval = 100 + Math.random() * 100; // 100~200ms 随机，防止太规律
 
+      const fish = currentFish;
+      const upSpeed   =fish? fish.scoreUpSpeed : 0;     // 匹配时每 tick 增加的分数
+      const downSpeed =fish? fish.scoreDownSpeed : 0;   // 不匹配时每 tick 减少的分数
+
+      let zeroStartTime = null; // 记录 matchScore 第一次变成 0 的时间
+
       matchScoreTimer = setInterval(() => {
         // 必须同时满足：正在长按 + indicator 已经出现
-        if (progress==0 || progress == 1 || !indicator || !indicator.parentNode) {
+        if (!indicator || !indicator.parentNode) {
           return;
         }
 
@@ -332,23 +339,67 @@
         const indicatorColor = getCurrentIndicatorColor();
 
         // 只有两者都是有效颜色时才进行匹配判断
-        if (progressColor && indicatorColor) {
-          if (progressColor === indicatorColor) {
-            // 颜色匹配：上升（每 tick +0.9，约 1.0~1.8 秒从 0 到 100）
-            matchScore = Math.min(100, matchScore + 0.9);
-          } else {
-            // 颜色不匹配：下降更快（增加紧张感）
-            matchScore = Math.max(0, matchScore - 1.8);
-          }
+        // ========== 2. 颜色必须都有效 ==========
+        if (!progressColor || !indicatorColor) return;
 
-          // 【可选】调试时查看实时数值
-          console.log('matchScore:', matchScore.toFixed(1), progressColor, indicatorColor);
+        // ========== 3. 分数变化（匹配 / 不匹配） ==========
+        const isMatch = progressColor === indicatorColor;
+        if (isMatch) {
+          // 匹配
+          matchScore = (progress != 0)
+            ? Math.min(100, matchScore + upSpeed)
+            : Math.max(0, matchScore - downSpeed);
+        } else {
+          // 不匹配
+          matchScore = Math.max(0, matchScore - downSpeed);
         }
+
+        // 【可选】调试时查看实时数值
+        console.log('matchScore:', matchScore.toFixed(1), 'upSpeed:', upSpeed, 'downSpeed:', downSpeed);
+
+
+        // ====== 新增：5秒内一直0就跑鱼 ======
+        if (matchScore === 0) {
+          console.log("matchScore 为 0");
+          if (!zeroStartTime) zeroStartTime = Date.now();
+          // 连续5秒为0 → 鱼跑掉
+          if (Date.now() - zeroStartTime >= 5000) {
+            console.log("鱼跑掉了！");
+
+            // 1. 鱼漂浮起复位
+            bobber.style.transform = `translateX(-50%) translateY(0px)`;
+
+            // 2. 隐藏指示器
+            if (indicator.parentNode) indicator.remove();
+
+            // 3. 停止计时器
+            if (matchScoreTimer) {
+              clearInterval(matchScoreTimer);
+              matchScoreTimer = null;
+            }
+
+            // 4. 重置所有状态
+            matchScore = 0;
+            progress = 0;
+            updateProgress();
+            zeroStartTime = null;
+            window.pendingFish = null;
+
+            // 停止颜色切换定时器
+            if (timer) {
+              clearTimeout(timer);
+              timer = null;
+            }
+          }
+        } else {
+          // 一旦不为0，立刻重置计时
+          zeroStartTime = null;
+        }
+        // =======================================
       }, tickInterval);
     }
 
 
-    // 绑定事件（支持鼠标 + 触摸）
     // 绑定事件（支持鼠标 + 触摸）
     mini.addEventListener('mousedown', (e) => {
       e.preventDefault();
@@ -473,8 +524,6 @@
       if (indicator.parentNode) indicator.remove();
       originalRemoveMiniWin?.();
     };
-
-
 
     document.documentElement.appendChild(mini);
   };
