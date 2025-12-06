@@ -351,6 +351,7 @@ window.HappyFishing = (()=>{
 
           if (state.matchScore === 0) {
             state.zeroStartTime ??= Date.now(); // +++
+            console.log('state.zeroStartTime:',state.zeroStartTime);
             if (Date.now() - state.zeroStartTime >= GAME_CONFIG.escapeTimeWhenZero) {
               console.log("鱼跑掉了！");
               state.bobber.style.transform = 'translateX(-50%) translateY(0px)';
@@ -359,6 +360,7 @@ window.HappyFishing = (()=>{
               state.pendingFish = null;
               state.progress = 0;
               updateProgress();
+              state.zeroStartTime = null;
             }
           } else {
             state.zeroStartTime = null;
