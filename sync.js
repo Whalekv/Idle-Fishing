@@ -104,10 +104,10 @@ window.HappyFishing = (()=>{
 
       Object.keys(state).forEach(key => {
         if (key.endsWith('Timer') || key.includes('RequestId') || key.includes('Raf')) {
-          state[key] = null;  // 这一步可不可以直接state[matchScoreTimer] = null;
+          state[key] = null; 
         }
       });
-    } //resetState()是什么，对象的属性是一个方法？ 
+    }
   };
 
   return {
@@ -144,7 +144,7 @@ window.HappyFishing = (()=>{
         user-select: none !important;
         clip-path: inset(0 0 0 0 round ${UI_CONFIG.progressCornerRadius}px);
       `;
-      state.mini = mini;
+      state.mini = mini; // state.mini 应该始终指向“已经完成初始化的组件实例”，而不应该指向一个裸的空 div。
       // #endregion
 
       // #region ==================== 红色按钮（点它抽鱼） ====================
@@ -187,16 +187,16 @@ window.HappyFishing = (()=>{
         };
         // 3. 延迟执行下沉动画
         setTimeout(() => {
-          this._sinkBobber(() => {  // this是什么？ +++
+          this._sinkBobber(() => { 
             state.bobber.style.transform = `translateX(-50%) translateY(${UI_CONFIG.bobberSinkDistance}px)`;
-            this._startBiteIndicator(); // this是什么？ +++
+            this._startBiteIndicator();
             state.fishingStartTime = Date.now();
             console.log("鱼已上钩！请在指示器变绿时长按起鱼", state.pendingFish);
           });
         }, selected.sinkTime);
       };
       mini.appendChild(btn);
-      state.btn = btn;  // 前面在赋值时直接写state.btn可以吗？ +++
+      state.btn = btn; 
       // #endregion
 
       // #region ==================== 鱼漂 ====================
@@ -215,7 +215,7 @@ window.HappyFishing = (()=>{
         transform: translateX(-50%);
       `;
       mini.appendChild(bobber);
-      state.bobber = bobber; // 前面在赋值时直接写state.bobber可以吗？ +++
+      state.bobber = bobber; 
       // #endregion
       
       // #region ==================== 进度条 SVG ====================
@@ -258,8 +258,6 @@ window.HappyFishing = (()=>{
       const totalLength = progressRect.getTotalLength();
       progressRect.style.strokeDasharray = totalLength;
       progressRect.style.strokeDashoffset = totalLength;
-
-      
       // #endregion
 
       // #region ==================== 指示器 ====================
@@ -336,7 +334,7 @@ window.HappyFishing = (()=>{
       const startMatchScoreTick = () => {
         if (state.matchScoreTimer) clearInterval(state.matchScoreTimer);
         const interval = getRandomInRange(GAME_CONFIG.matchTickInterval);
-        const up = state.currentFish?.scoreUpSpeed || 0;  // 不用写state.currentFish.scoreUpSpeed吗？+++
+        const up = state.currentFish?.scoreUpSpeed || 0; 
         const down = state.currentFish?.scoreDownSpeed || 0;
 
         state.matchScoreTimer = setInterval(() => {
@@ -350,13 +348,13 @@ window.HappyFishing = (()=>{
           }
 
           if (state.matchScore === 0) {
-            state.zeroStartTime ??= Date.now(); // +++
+            state.zeroStartTime ??= Date.now(); 
             console.log('state.zeroStartTime:',state.zeroStartTime);
             if (Date.now() - state.zeroStartTime >= GAME_CONFIG.escapeTimeWhenZero) {
               console.log("鱼跑掉了！");
               state.bobber.style.transform = 'translateX(-50%) translateY(0px)';
               state.indicator.remove();
-              this._clearAllTimers(); // +++
+              this._clearAllTimers(); 
               state.pendingFish = null;
               state.progress = 0;
               updateProgress();
@@ -364,6 +362,11 @@ window.HappyFishing = (()=>{
             }
           } else {
             state.zeroStartTime = null;
+          }
+
+          if (state.matchScore > 10) {
+            console.log('钓鱼成功');          
+            this._biteSuccess();
           }
 
           console.log(`匹配得分：${state.matchScore}`);
@@ -388,22 +391,22 @@ window.HappyFishing = (()=>{
       mini.addEventListener('mousedown', handlePressStart);
       mini.addEventListener('mouseup', handlePressEnd);
       mini.addEventListener('mouseleave', handlePressEnd);
-      mini.addEventListener('touchstart', handlePressStart, { passive: false }); // +++
+      mini.addEventListener('touchstart', handlePressStart, { passive: false });
       mini.addEventListener('touchend', handlePressEnd);
       mini.addEventListener('touchcancel', handlePressEnd);
       // #endregion
 
-      // #region ==================== 私有方法（下沉、咬钩） ====================
+      // #region ==================== 私有方法（下沉、咬钩、钓鱼成功、清空计时器） ====================
       // 鱼漂下沉
       this._sinkBobber = (onComplete) => {
         if (!state.bobber) return;
         if (state.sinkRequestId) cancelAnimationFrame(state.sinkRequestId);
 
-        const start = performance.now(); // performance+++
+        const start = performance.now();
         const duration = GAME_CONFIG.bobberSinkAnimationDuration || 1600;
         const targetY = UI_CONFIG.bobberSinkDistance;
 
-        const animate = (now) => { // now+++
+        const animate = (now) => { // 只有当函数被 requestAnimationFrame 直接调用时，它才会传入 now 这个参数。
           const elapsed = now - start;
           const progress = Math.min(elapsed / duration, 1);
           const ease = 1 - Math.pow(1 - progress, 3);
@@ -414,7 +417,7 @@ window.HappyFishing = (()=>{
             console.log('动画执行中...:',state.bobber.style.transform);
           } else {
             state.sinkRequestId = null;
-            onComplete?.(); // onComplete+++
+            onComplete?.();
           }
         };
         state.sinkRequestId = requestAnimationFrame(animate);
@@ -429,7 +432,7 @@ window.HappyFishing = (()=>{
         const changeColor = () => {
           if (!state.indicator?.parentNode) return;
           indicator.classList.remove('red', 'yellow', 'green');
-          void indicator.offsetLeft; // void+++
+          void indicator.offsetLeft;
           const next = INDICATOR_CONFIG.colors[Math.floor(Math.random() * 3)];
           indicator.classList.add(next);
           state.indicatorTimer = setTimeout(changeColor, getRandomInRange(INDICATOR_CONFIG.switchDelay));
@@ -437,7 +440,43 @@ window.HappyFishing = (()=>{
 
         state.indicatorTimer = setTimeout(changeColor, getRandomInRange(INDICATOR_CONFIG.firstDelay));
       };
+      // 钓鱼成功
+      this._biteSuccess = async () => { 
+        if (!state.pendingFish) {
+          console.warn('pendingFish 为空，异常情况');
+          this.remove();
+          return;
+        };
+        // 生成完整鱼对象并保存到 chrome.storage.local
+        const caughtFish = {
+          ...state.pendingFish,                               // name, weight, rarity 等原有属性
+          timestamp: Date.now(),                              // 钓到时间
+          signature: `fish_${Date.now()}_${Math.random().toString(36).substr(2, 9)}` // 唯一标识，防重
+        };
+        try {
+          const result = await chrome.storage.local.get('myFishes');
+          let myFishes = result.myFishes;
 
+          if (!Array.isArray(myFishes)) {
+            myFishes = [];  // 首次使用或数据损坏时初始化为空数组
+          };
+
+          myFishes.push(caughtFish);  // 追加最新钓到的鱼（顺序即为钓鱼历史）
+
+          await chrome.storage.local.set({ myFishes });
+          console.log('鱼已保存，本地总数量：', myFishes.length, caughtFish);
+        } catch (err) {
+          console.error('保存鱼到 chrome.storage 失败：', err);
+        };
+
+        if (window.createSuccessWin) {
+          // 可以把鱼信息临时挂到全局，successWin 里自行读取展示
+          window.lastCaughtFish = state.pendingFish;
+          createSuccessWin();
+        };
+        this.remove();
+      };
+      // 清空计时器
       this._clearAllTimers = () => {
         if (state.indicatorTimer) clearTimeout(state.indicatorTimer);
         if (state.matchScoreTimer) clearInterval(state.matchScoreTimer);
