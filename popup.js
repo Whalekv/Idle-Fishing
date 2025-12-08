@@ -10,3 +10,9 @@ document.querySelector('.close-mini-win').addEventListener('click', () => {
   chrome.runtime.sendMessage({ action: 'removeMini' });
   window.close();
 });
+
+// 查看鱼塘按钮
+document.getElementById('openFishpond').addEventListener('click', () => {
+  chrome.runtime.openOptionsPage();  // 自动打开 fishpond.html
+  window.close();
+});

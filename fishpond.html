@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>我的鱼塘 - Happy Fishing</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body, html {
+      height: 100%;
+      font-family: system-ui, -apple-system, sans-serif;
+      background: #0a3d62 url('pond.svg') center/cover no-repeat fixed;
+      color: white;
+      overflow-x: hidden;
+    }
+    .container {
+      min-height: 100vh;
+      padding: 20px;
+      backdrop-filter: blur(8px);
+      background: rgba(0,0,0,0.25);
+    }
+    header {
+      text-align: center;
+      padding: 30px 20px;
+    }
+    h1 {
+      font-size: 42px;
+      margin-bottom: 10px;
+      text-shadow: 0 4px 12px rgba(0,0,0,0.6);
+    }
+    .stats {
+      font-size: 20px;
+      opacity: 0.9;
+    }
+    .fish-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 20px;
+      max-width: 1400px;
+      margin: 40px auto;
+      padding: 0 10px;
+    }
+    .fish-card {
+      background: rgba(255,255,255,0.15);
+      border-radius: 16px;
+      padding: 20px;
+      backdrop-filter: blur(10px);
+      border: 1px solid rgba(255,255,255,0.2);
+      transition: transform 0.3s, box-shadow 0.3s;
+    }
+    .fish-card:hover {
+      transform: translateY(-8px);
+      box-shadow: 0 20px 40px rgba(0,0,0,0.4);
+    }
+    .fish-name {
+      font-size: 28px;
+      font-weight: bold;
+      margin-bottom: 8px;
+    }
+    .fish-weight {
+      font-size: 20px;
+      margin: 8px 0;
+    }
+    .rarity {
+      font-size: 24px;
+      margin: 12px 0;
+      letter-spacing: 4px;
+    }
+    .timestamp {
+      font-size: 14px;
+      opacity: 0.7;
+      margin-top: 16px;
+    }
+    .empty {
+        grid-column: 1 / -1;
+        text-align: center;
+        font-size: 28px;
+        padding: 100px 20px;
+        opacity: 0.8;
+        line-height: 1.8;
+        background: rgba(0,0,0,0.2);
+        border-radius: 20px;
+        margin: 40px 20px;
+    }
+    @media (max-width: 640px) {
+      h1 { font-size: 32px; }
+      .fish-grid { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>我的鱼塘</h1>
+      <div class="stats">共捕获 <span id="total">0</span> 条鱼</div>
+    </header>
+
+    <div class="fish-grid" id="fishGrid">
+      <div class="empty">还没有钓到鱼哦～快去钓鱼吧！</div>
+    </div>
+  </div>
+  <script src="fishpond.js"></script>
+</body>
+</html>
