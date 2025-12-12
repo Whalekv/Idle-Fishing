@@ -47,12 +47,25 @@ const STORAGE_KEY = {
   position: 'happy-fishing-pos',                                           // mini窗口的位置
   removeFlag: 'happy-fishing-pos:remove'                                   // 移除mini窗口的key
 };
-// =============================================================================================================================
 
 // ==================== 通用随机范围工具函数 ==================== 
 const getRandomInRange = ({ min, max }) => min + Math.random() * (max - min);
 // =============================================================================================================================
 
+let GLOBAL_SIGNATURE = '';
+// 初始化时尝试读取签名
+chrome.storage.local.get('fishingSignature', (result) => {
+  if (result.fishingSignature) {
+    GLOBAL_SIGNATURE = result.fishingSignature;
+  }
+});
+
+// 监听签名变化（支持动态修改）
+chrome.storage.onChanged.addListener((changes) => {
+  if (changes.fishingSignature) {
+    GLOBAL_SIGNATURE = changes.fishingSignature.newValue || '';
+  }
+});
 
 window.HappyFishing = (()=>{
   if (window.HappyFishing) {
@@ -451,7 +464,7 @@ window.HappyFishing = (()=>{
         const caughtFish = {
           ...state.pendingFish,                               // name, weight, rarity 等原有属性
           timestamp: Date.now(),                              // 钓到时间
-          signature: `fish_${Date.now()}_${Math.random().toString(36).substr(2, 9)}` // 唯一标识，防重
+          signature: GLOBAL_SIGNATURE // 唯一标识，防重
         };
         try {
           const result = await chrome.storage.local.get('myFishes');
