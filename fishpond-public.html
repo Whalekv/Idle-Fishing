@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>我的鱼塘 - Happy Fishing</title>
+  <title>公共鱼池</title>
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
     body, html {
@@ -86,32 +86,19 @@
       h1 { font-size: 32px; }
       .fish-grid { grid-template-columns: 1fr; }
     }
-    .contribute-btn {
-      margin-top: 16px;
-      padding: 8px 16px;
-      background: #ff5722;
-      color: white;
-      border: none;
-      border-radius: 8px;
-      cursor: pointer;
-      font-size: 14px;
-    }
-    .contribute-btn:hover {
-      background: #e64a19;
-    }
   </style>
 </head>
 <body>
   <div class="container">
     <header>
-      <h1>我的鱼塘</h1>
-      <div class="stats">共捕获 <span id="total">0</span> 条鱼</div>
+        <h1>公共鱼池</h1>
+        <div class="stats">共有 <span id="total">0</span> 条鱼</div>
     </header>
 
     <div class="fish-grid" id="fishGrid">
       <div class="empty">还没有钓到鱼哦～快去钓鱼吧！</div>
     </div>
   </div>
-  <script src="fishpond.js"></script>
+  <script src="fishpond-public.js"></script>
 </body>
 </html>
