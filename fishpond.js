@@ -1,10 +1,5 @@
 // fishpond.js
 
-const PUBLIC_GIST_ID = '';  
-
-const GITHUB_TOKEN = '';
-
-const GIST_FILENAME = '';  // 你创建 Gist 时用的文件名，必须一致
 
 
 let allFishes = [];
@@ -39,7 +34,7 @@ function renderFishes() {
   // 改用 for 循环，这样 i 才存在
   for (let i = 0; i < allFishes.length; i++) {
     const fish = allFishes[i];
-
+    console.log('签名：',fish.signature);
     const card = document.createElement('div');
     card.className = 'fish-card';
 
@@ -53,6 +48,7 @@ function renderFishes() {
       <div class="fish-weight">重量：${fish.weight.toFixed(2)} kg</div>
       <div class="rarity">${'★'.repeat(fish.rarity)} <small style="opacity:0.7; font-size:16px;">${fish.rarity}/6</small></div>
       <div class="timestamp">捕获时间：${timeStr}</div>
+      <div class="fish-signature">签名：${fish.signature}</div>
       <button class="contribute-btn">放入公共鱼池</button>
     `;
 

@@ -1,11 +1,4 @@
 
-const PUBLIC_GIST_ID = '';  
-
-const GITHUB_TOKEN = '';
-
-const GIST_FILENAME = '';  // 你创建 Gist 时用的文件名，必须一致
-
-const GITHUB_NAME = '';
 
 let publicFishes = [];
 
@@ -37,6 +30,7 @@ function renderFishes() {
 
   const fragment = document.createDocumentFragment();
   publicFishes.forEach(fish => {
+    console.log('fish: ', fish);
     const card = document.createElement('div');
     card.className = 'fish-card';
     const timeStr = new Date(fish.timestamp).toLocaleString('zh-CN', {
@@ -44,14 +38,13 @@ function renderFishes() {
       hour: '2-digit', minute: '2-digit', second: '2-digit'
     }).replace(/\//g, '-');
 
-    // 可选：显示贡献者昵称（signature 前半部分）
-    const contributor = fish.signature ? fish.signature.match(/^[^\d]+/)?.[0] || '匿名' : '匿名';
 
     card.innerHTML = `
-      <div class="fish-name">${fish.name} (by ${contributor})</div>
+      <div class="fish-name">${fish.name} </div>
       <div class="fish-weight">重量：${fish.weight.toFixed(2)} kg</div>
       <div class="rarity">${'★'.repeat(fish.rarity)} <small style="opacity:0.7; font-size:16px;">${fish.rarity}/6</small></div>
       <div class="timestamp">捕获时间：${timeStr}</div>
+      <div class="fish-signature">签名：${fish.signature}</div>
     `;
     fragment.appendChild(card);
   });
