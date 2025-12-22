@@ -23,7 +23,8 @@
       "overlay.js",
       "pond.svg", 
       "fishingFloat.svg",
-      "fishpond.js"
+      "fishpond.js",
+      "config.js"
     ],
     "matches": ["<all_urls>"]
   }]

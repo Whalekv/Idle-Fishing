@@ -2,12 +2,12 @@
 
 // ==================== 新增：鱼表 ====================
 const FISH_TABLE = [
-  { name: "小虾米", rarity: 1, weightMin: 0.05, weightMax: 0.3,  sinkTime: 1500, difficulty: 1, scoreUpSpeed: 3,    scoreDownSpeed: 1   },
-  { name: "鲫鱼",   rarity: 2, weightMin: 0.3,  weightMax: 1.5,  sinkTime: 2000, difficulty: 2, scoreUpSpeed: 2,    scoreDownSpeed: 1.5 },
-  { name: "草鱼",   rarity: 3, weightMin: 2,    weightMax: 8,    sinkTime: 3000, difficulty: 4, scoreUpSpeed: 1.5,  scoreDownSpeed: 2   },
-  { name: "青鱼",   rarity: 4, weightMin: 10,   weightMax: 25,   sinkTime: 4000, difficulty: 6, scoreUpSpeed: 1,    scoreDownSpeed: 2.5 },
-  { name: "鲢鱼",   rarity: 5, weightMin: 15,   weightMax: 40,   sinkTime: 5000, difficulty: 8, scoreUpSpeed: 0.5,  scoreDownSpeed: 4   },
-  { name: "金龙鱼", rarity: 6, weightMin: 30,   weightMax: 100,  sinkTime: 6000, difficulty: 10,scoreUpSpeed: 0.3,  scoreDownSpeed: 6   }
+  { name: "小虾米", rarity: 1, weightMin: 0.05, weightMax: 0.3,  sinkTime: 150, difficulty: 1, scoreUpSpeed: 3,    scoreDownSpeed: 1   },
+  { name: "鲫鱼",   rarity: 2, weightMin: 0.3,  weightMax: 1.5,  sinkTime: 200, difficulty: 2, scoreUpSpeed: 2,    scoreDownSpeed: 1.5 },
+  { name: "草鱼",   rarity: 3, weightMin: 2,    weightMax: 8,    sinkTime: 300, difficulty: 4, scoreUpSpeed: 1.5,  scoreDownSpeed: 2   },
+  { name: "青鱼",   rarity: 4, weightMin: 10,   weightMax: 25,   sinkTime: 400, difficulty: 6, scoreUpSpeed: 1,    scoreDownSpeed: 2.5 },
+  { name: "鲢鱼",   rarity: 5, weightMin: 15,   weightMax: 40,   sinkTime: 500, difficulty: 8, scoreUpSpeed: 0.5,  scoreDownSpeed: 4   },
+  { name: "金龙鱼", rarity: 6, weightMin: 30,   weightMax: 100,  sinkTime: 600, difficulty: 10,scoreUpSpeed: 0.3,  scoreDownSpeed: 6   }
 ];
 // ==================== 游戏全局平衡参数 ====================
 const GAME_CONFIG = {
@@ -16,7 +16,7 @@ const GAME_CONFIG = {
   progressBackwardSpeed: 0.002,                                           // 松手时进度条每帧减少多少
   matchTickInterval: { min: 100, max: 200 },                              // 颜色匹配检查时间间隔
   escapeTimeWhenZero: 5000,                                               // matchScore 连续为 0 超过多少毫秒跑鱼
-  bobberSinkAnimationDuration: 1600,                                            // 鱼漂下沉动画总时长 ms
+  bobberSinkAnimationDuration: 160,                                       // 鱼漂下沉动画总时长 ms  1600
 };
 // ==================== UI 尺寸和样式 ====================
 const UI_CONFIG = {
@@ -377,7 +377,7 @@ window.HappyFishing = (()=>{
             state.zeroStartTime = null;
           }
 
-          if (state.matchScore > 10) {
+          if (state.matchScore > 1) {
             console.log('钓鱼成功');          
             this._biteSuccess();
           }
