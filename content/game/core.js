@@ -1,0 +1,1 @@
+// HappyFishing 主类（当前 sync.js 大部分逻辑）

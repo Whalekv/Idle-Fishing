@@ -1,0 +1,1 @@
+// 跨 Tab 同步逻辑（localStorage + storage 监听）
