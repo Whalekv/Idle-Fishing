@@ -52,44 +52,6 @@
       transform: translateY(-8px);
       box-shadow: 0 20px 40px rgba(0,0,0,0.4);
     }
-    .fish-name {
-      font-size: 28px;
-      font-weight: bold;
-      margin-bottom: 8px;
-    }
-    .fish-weight {
-      font-size: 20px;
-      margin: 8px 0;
-    }
-    .rarity {
-      font-size: 24px;
-      margin: 12px 0;
-      letter-spacing: 4px;
-    }
-    .timestamp {
-      font-size: 14px;
-      opacity: 0.7;
-      margin-top: 16px;
-    }
-    .fish-signature {
-      font-size: 14px;
-      opacity: 0.7;
-      margin-top: 16px;
-    }
-    .delete-btn {
-      margin-top: 8px;
-      margin-left: 8px;
-      padding: 8px 16px;
-      background: #f44336;
-      color: white;
-      border: none;
-      border-radius: 8px;
-      cursor: pointer;
-      font-size: 14px;
-    }
-    .delete-btn:hover {
-      background: #d32f2f;
-    }
     .empty {
         grid-column: 1 / -1;
         text-align: center;
@@ -105,32 +67,143 @@
       h1 { font-size: 32px; }
       .fish-grid { grid-template-columns: 1fr; }
     }
-    .contribute-btn {
-      margin-top: 16px;
-      padding: 8px 16px;
-      background: #ff5722;
+    .pond-layout {
+      position: relative;
+      width: 100%;
+      height: 100%;
+      max-width: 1400px;
+      margin: 0 auto;
+      aspect-ratio: 15 / 7; /* 可选：保持比例，避免太扁 */
+      overflow: hidden;
+      border-radius: 20px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.4);
+    }
+
+    .fish-canvas {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none; /* 不拦截鼠标事件 */
+      z-index: 1;
+    }
+
+    .fish-list-panel {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 360px;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.4);
+      backdrop-filter: blur(8px);
+      padding: 20px;
+      overflow-y: auto;
+      z-index: 2;
+      border-right: 1px solid rgba(255,255,255,0.2);
+    }
+
+    .fish-list {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .fish-list li {
+      background: rgba(255,255,255,0.1);
+      border-radius: 12px;
+      padding: 14px;
+      border: 1px solid rgba(255,255,255,0.15);
+    }
+
+    .fish-list .fish-name {
+      font-size: 22px;
+      font-weight: bold;
+      margin-bottom: 6px;
+    }
+
+    .fish-list .fish-weight { 
+      font-size: 18px; margin: 6px 0; 
+    }
+
+    .rarity { 
+      font-size: 20px; margin: 8px 0; letter-spacing: 3px; 
+    }
+    
+    .timestamp, .fish-signature { 
+      font-size: 13px; opacity: 0.7; margin-top: 8px; 
+    }
+
+    #emptyHint {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      font-size: 28px;
+      text-align: center;
+      width: 100%;
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    /* 隐藏滚动条美化（可选） */
+    .fish-list-panel::-webkit-scrollbar {
+      width: 8px;
+    }
+    .fish-list-panel::-webkit-scrollbar-thumb {
+      background: rgba(255,255,255,0.3);
+      border-radius: 4px;
+    }
+
+    .btn-group button {
+      flex: 1;
+      padding: 8px 12px;
+      background: rgba(255,255,255,0.2);
       color: white;
       border: none;
       border-radius: 8px;
       cursor: pointer;
       font-size: 14px;
+      transition: background 0.2s;
     }
+
+    .contribute-btn {
+      background: #ff5722 !important;
+    }
+
     .contribute-btn:hover {
-      background: #e64a19;
+      background: #e64a19 !important;
+    }
+
+    .delete-btn {
+      background: #f44336 !important;
+    }
+
+    .delete-btn:hover {
+      background: #d32f2f !important;
     }
   </style>
 </head>
 <body>
   <div class="container">
-    <header>
-      <h1>我的鱼塘</h1>
-      <div class="stats">共捕获 <span id="total">0</span> 条鱼</div>
-    </header>
+    <!-- 左侧：鱼列表（可滚动） -->
+    <div class="pond-layout">
+      <div class="fish-list-panel">
+        <!-- 标题和统计 -->
+        <header>
+          <h1>我的鱼塘</h1>
+          <div class="stats">共捕获 <span id="total">0</span> 条鱼</div>
+        </header>
+        <ul id="fishList" class="fish-list"></ul>
+        <div id="emptyHint" class="empty">还没有钓到鱼哦～快去钓鱼吧！</div>
+      </div>
 
-    <div class="fish-grid" id="fishGrid">
-      <div class="empty">还没有钓到鱼哦～快去钓鱼吧！</div>
+      <!-- 右侧：动画画布（覆盖背景） -->
+      <canvas id="fishCanvas" class="fish-canvas"></canvas>
     </div>
   </div>
+
   <script src="fishpond.js"></script>
 </body>
 </html>

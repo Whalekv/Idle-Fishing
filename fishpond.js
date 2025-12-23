@@ -37,61 +37,66 @@ function initFishpond() {
   }
 
   function renderFishes() {
-    const grid = document.getElementById('fishGrid');
+    const list = document.getElementById('fishList');
     const totalEl = document.getElementById('total');
+    const emptyHint = document.getElementById('emptyHint');
+
     totalEl.textContent = allFishes.length;
 
-    grid.innerHTML = '';
+    // 清空列表
+    list.innerHTML = '';
 
     if (allFishes.length === 0) {
-      grid.innerHTML = `<div class="empty">鱼塘空空如也～<br><br>快去钓鱼吧！</div>`;
+      emptyHint.style.display = 'block';
       return;
     }
 
+    emptyHint.style.display = 'none';
+
+    // 最新鱼在上
     const fragment = document.createDocumentFragment();
 
-    // 改用 for 循环，这样 i 才存在
     for (let i = 0; i < allFishes.length; i++) {
       const fish = allFishes[i];
-      // console.log('签名：',fish.signature);
-      const card = document.createElement('div');
-      card.className = 'fish-card';
+      const originalIndex = allFishes.length - 1 - i; // 用于按钮事件中的索引
+
+      const li = document.createElement('li');
 
       const timeStr = new Date(fish.timestamp).toLocaleString('zh-CN', {
         year: 'numeric', month: '2-digit', day: '2-digit',
         hour: '2-digit', minute: '2-digit', second: '2-digit'
       }).replace(/\//g, '-');
 
-      card.innerHTML = `
+      li.innerHTML = `
         <div class="fish-name">${fish.name}</div>
         <div class="fish-weight">重量：${fish.weight.toFixed(2)} kg</div>
-        <div class="rarity">${'★'.repeat(fish.rarity)} <small style="opacity:0.7; font-size:16px;">${fish.rarity}/6</small></div>
+        <div class="rarity">${'★'.repeat(fish.rarity)} <small style="opacity:0.7;">${fish.rarity}/6</small></div>
         <div class="timestamp">捕获时间：${timeStr}</div>
         <div class="fish-signature">签名：${fish.signature}</div>
-        <button class="contribute-btn">放入公共鱼池</button>
-        <button class="delete-btn">删除</button>
+        <div class="btn-group" style="margin-top:12px; display:flex; gap:8px;">
+          <button class="contribute-btn">放入公共鱼池</button>
+          <button class="delete-btn">删除</button>
+        </div>
       `;
 
-      // 绑定事件（闭包安全）
-      card.querySelector('.contribute-btn').addEventListener('click', () => {
-        const originalIndex = allFishes.length - 1 - i;
+      // 放入公共鱼池按钮
+      li.querySelector('.contribute-btn').addEventListener('click', () => {
         if (confirm(`确定要把 ${fish.name} (${fish.weight.toFixed(2)}kg) 放入公共鱼池吗？\n放入后本地记录将删除。`)) {
-          contributeFish(fish, originalIndex);  // 确认后才加入队列
+          contributeFish(fish, originalIndex);
         }
       });
 
-      // 新增：删除按钮
-      card.querySelector('.delete-btn').addEventListener('click', () => {
-        const originalIndex = allFishes.length - 1 - i;
+      // 删除按钮
+      li.querySelector('.delete-btn').addEventListener('click', () => {
         if (confirm(`确定要删除 ${fish.name} (${fish.weight.toFixed(2)}kg) 吗？\n删除后无法恢复。`)) {
           deleteFish(originalIndex);
         }
       });
 
-      fragment.appendChild(card);
+      fragment.appendChild(li);
     }
 
-    grid.appendChild(fragment);
+    list.appendChild(fragment);
   }
 
   // 页面加载完成就执行
@@ -106,8 +111,7 @@ function initFishpond() {
     }
   });
 
-  // 将鱼投放到公共鱼池（队列版，支持连续上传）
-  // 将鱼加入上传队列（不在这里弹 confirm）
+  // 将鱼加入上传队列
   function contributeFish(fish, originalIndex) {
     contributeQueue.push({ fish, originalIndex });
     if (!isContributing) {
@@ -216,4 +220,154 @@ function initFishpond() {
       processQueue();
     }
   }
+
+
+  // ===== 新增：Canvas 鱼游动动画系统 =====
+  const canvas = document.getElementById('fishCanvas');
+  const ctx = canvas.getContext('2d');
+
+  let animationId = null;
+  let fishObjects = []; // 存储每条鱼的动画对象
+
+  // 稀有度对应的颜色（可自行调整）
+  const RARITY_COLORS = [
+    null,                  // index 0 不使用
+    '#A0A0A0',             // 1★ 小虾米 - 灰色
+    '#88C0FF',             // 2★ 鲫鱼 - 浅蓝
+    '#FFD700',             // 3★ 草鱼 - 金黄
+    '#FF8C00',             // 4★ 青鱼 - 橙色
+    '#FF4040',             // 5★ 鲢鱼 - 红色
+    '#B9F2F2'              // 6★ 金龙鱼 - 闪耀青（带白色高光感）
+  ];
+
+  // 调整画布大小以匹配容器
+  function resizeCanvas() {
+    canvas.width = canvas.offsetWidth;
+    canvas.height = canvas.offsetHeight;
+  }
+  resizeCanvas();
+  window.addEventListener('resize', resizeCanvas);
+
+  // 单个鱼的动画类
+  class SwimmingFish {
+    constructor(fishData) {
+      this.data = fishData; // 原始鱼数据（name, weight, rarity 等）
+      this.resetPosition();
+      this.angle = Math.random() * Math.PI * 2; // 初始方向
+      this.speed = 0.2 + Math.random() * 0.4;   // 基础速度
+      this.flip = 1; // 1 = 向右，-1 = 向左（用于翻转身体）
+    }
+
+    resetPosition() {
+      // 随机初始位置（避开左侧列表面板）
+      this.x = canvas.width * 0.3 + Math.random() * (canvas.width * 0.7);
+      this.y = Math.random() * canvas.height;
+    }
+
+    update() {
+      // 简单随机转向
+      this.angle += (Math.random() - 0.5) * 0.15;
+
+      this.x += Math.cos(this.angle) * this.speed;
+      this.y += Math.sin(this.angle) * this.speed;
+
+      // 边界检测与反弹
+      const margin = 50;
+      if (this.x < canvas.width * 0.25 || this.x > canvas.width - margin) {
+        this.angle = Math.PI - this.angle;
+      }
+      if (this.y < margin || this.y > canvas.height - margin) {
+        this.angle = -this.angle;
+      }
+
+      // 确定翻转方向（向左时翻转）
+      this.flip = Math.cos(this.angle) > 0 ? 1 : -1;
+
+      // 限制在可见区域
+      this.x = Math.max(canvas.width * 0.25, Math.min(canvas.width - 50, this.x));
+      this.y = Math.max(50, Math.min(canvas.height - 50, this.y));
+    }
+
+    draw() {
+      const scale = 0.3 + this.data.weight / 50; // 重量越大鱼越大（上限合理）
+      const bodyLength = 60 * scale;
+      const bodyHeight = 30 * scale;
+      const tailSize = 20 * scale;
+
+      ctx.save();
+      ctx.translate(this.x, this.y);
+      ctx.scale(this.flip, 1);
+
+      // 身体（椭圆）
+      ctx.fillStyle = RARITY_COLORS[this.data.rarity];
+      ctx.beginPath();
+      ctx.ellipse(0, 0, bodyLength, bodyHeight, 0, 0, Math.PI * 2);
+      ctx.fill();
+
+      // 尾巴（三角）
+      ctx.beginPath();
+      ctx.moveTo(-bodyLength, 0);
+      ctx.lineTo(-bodyLength - tailSize, -tailSize * 0.8);
+      ctx.lineTo(-bodyLength - tailSize, tailSize * 0.8);
+      ctx.closePath();
+      ctx.fill();
+
+      // 眼睛（小白圆 + 黑瞳孔）
+      ctx.fillStyle = 'white';
+      ctx.beginPath();
+      ctx.arc(bodyLength * 0.6, -bodyHeight * 0.3, 8 * scale, 0, Math.PI * 2);
+      ctx.fill();
+
+      ctx.fillStyle = 'black';
+      ctx.beginPath();
+      ctx.arc(bodyLength * 0.6 + 2 * scale, -bodyHeight * 0.3, 4 * scale, 0, Math.PI * 2);
+      ctx.fill();
+
+      ctx.restore();
+    }
+  }
+
+  // 动画循环
+  function animate() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    for (const fish of fishObjects) {
+      fish.update();
+      fish.draw();
+    }
+
+    animationId = requestAnimationFrame(animate);
+  }
+
+  // 根据当前 allFishes 更新动画鱼群
+  function updateFishAnimation() {
+    // 简单同步：重建所有鱼对象（数量不多时最简单可靠）
+    fishObjects = allFishes.map(fish => new SwimmingFish(fish));
+
+    // 如果正在动画，先取消再重启（避免多重循环）
+    if (animationId) cancelAnimationFrame(animationId);
+    if (allFishes.length > 0) {
+      animate();
+    } else {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      if (animationId) cancelAnimationFrame(animationId);
+      animationId = null;
+    }
+  }
+
+  // 在渲染完列表后立即更新动画
+  const originalRenderFishes = renderFishes;
+  renderFishes = function() {
+    originalRenderFishes();
+    updateFishAnimation();
+  };
+
+  // 初始加载时也执行一次
+  loadAndRender();
+
+  // 窗口大小变化时重置鱼位置
+  window.addEventListener('resize', () => {
+    resizeCanvas();
+    fishObjects.forEach(f => f.resetPosition());
+  });
 }
