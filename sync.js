@@ -1,56 +1,5 @@
 // sync.js —— 跨 Tab 实时同步（创建 、 关闭）
 
-// ==================== 新增：鱼表 ====================
-const FISH_TABLE = [
-  { name: "小虾米", rarity: 1, weightMin: 0.05, weightMax: 0.3,  sinkTime: 150, difficulty: 1, scoreUpSpeed: 3,    scoreDownSpeed: 1   },
-  { name: "鲫鱼",   rarity: 2, weightMin: 0.3,  weightMax: 1.5,  sinkTime: 200, difficulty: 2, scoreUpSpeed: 2,    scoreDownSpeed: 1.5 },
-  { name: "草鱼",   rarity: 3, weightMin: 2,    weightMax: 8,    sinkTime: 300, difficulty: 4, scoreUpSpeed: 1.5,  scoreDownSpeed: 2   },
-  { name: "青鱼",   rarity: 4, weightMin: 10,   weightMax: 25,   sinkTime: 400, difficulty: 6, scoreUpSpeed: 1,    scoreDownSpeed: 2.5 },
-  { name: "鲢鱼",   rarity: 5, weightMin: 15,   weightMax: 40,   sinkTime: 500, difficulty: 8, scoreUpSpeed: 0.5,  scoreDownSpeed: 4   },
-  { name: "金龙鱼", rarity: 6, weightMin: 30,   weightMax: 100,  sinkTime: 600, difficulty: 10,scoreUpSpeed: 0.3,  scoreDownSpeed: 6   }
-];
-// ==================== 游戏全局平衡参数 ====================
-const GAME_CONFIG = {
-  totalWeight: FISH_TABLE.reduce((sum, f) => sum + (7 - f.rarity), 0),    // 根据稀有度加权随机（稀有度越高概率越低）
-  progressForwardSpeed: 0.0008,                                           // 长按时进度条每帧增加多少
-  progressBackwardSpeed: 0.002,                                           // 松手时进度条每帧减少多少
-  matchTickInterval: { min: 100, max: 200 },                              // 颜色匹配检查时间间隔
-  escapeTimeWhenZero: 5000,                                               // matchScore 连续为 0 超过多少毫秒跑鱼
-  bobberSinkAnimationDuration: 160,                                       // 鱼漂下沉动画总时长 ms  1600
-};
-// ==================== UI 尺寸和样式 ====================
-const UI_CONFIG = {
-  windowSize: { width: 200, height: 100 },                                // mini窗口大小
-  progressCornerRadius: 16,                                               // mini窗口圆角
-  buttonSize: 30,                                                         // btn测试按钮大小
-  buttonColor: '#ef2baeff',                                             // btn测试按钮颜色
-  bobberSinkDistance: 40,                                                 // 鱼漂下沉像素
-  progressStrokeWidth: 4,                                                 // 进度条线宽
-  progressRadiusOffset: 2,                                                // 进度条向内偏移
-  // 进度条四条边的分段比例（实测值，保持不变即可）
-  progressColorSegments: {
-    top:    0.304,                                                        // 0% ~ 30.4%   上边 → 红
-    right:  0.478,                                                        // 30.4% ~ 47.8% 右边 → 黄
-    bottom: 0.826                                                         // 47.8% ~ 82.6% 下边 → 黄
-                                                                          // 82.6% ~ 100%  左边 → 绿
-  },
-  indicatorSize: 40,                                                      // 指示器宽高
-};
-// ==================== 咬钩指示器配置 ====================
-const INDICATOR_CONFIG = {
-  firstDelay: { min: 5000, max: 10000 },                                   // 首次切换颜色的时间
-  switchDelay: { min: 5000, max: 10000 },                                  // 切换颜色的时间
-  colors: ['red', 'yellow', 'green']                                       // 指示器颜色
-};
-// 本地存储 Key
-const STORAGE_KEY = {
-  position: 'happy-fishing-pos',                                           // mini窗口的位置
-  removeFlag: 'happy-fishing-pos:remove'                                   // 移除mini窗口的key
-};
-
-// ==================== 通用随机范围工具函数 ==================== 
-const getRandomInRange = ({ min, max }) => min + Math.random() * (max - min);
-// =============================================================================================================================
 
 let GLOBAL_SIGNATURE = '';
 // 初始化时尝试读取签名
@@ -83,7 +32,6 @@ window.HappyFishing = (()=>{
     indicator: null,                                                       // 指示器DOM
 
     // 运行时状态
-    currentFish: null,                                                     // 当前这一次钓鱼抽到的鱼（在点按钮时决定）
     pendingFish: null,                                                     // 等待提竿成功的鱼
     fishingStartTime: 0,                                                   // 起鱼计时起点
 
@@ -102,7 +50,6 @@ window.HappyFishing = (()=>{
     resetState() {
       // 一键重置所有运行时状态（关闭小窗时调用）
       state.mini = null;
-      state.currentFish = null;
       state.pendingFish = null;
       state.fishingStartTime = 0;
       state.progress = 0;
@@ -135,7 +82,7 @@ window.HappyFishing = (()=>{
         return;
       };
 
-      // #region  ==================== 创建主容器 ====================
+      // #region ==================== 创建主容器 ====================
       mini = document.createElement('div');
       mini.id = 'happy-fishing-mini';
       mini.style.cssText = `
@@ -175,29 +122,12 @@ window.HappyFishing = (()=>{
       btn.onclick = (e) => {
         e.stopPropagation();
         if (state.sinkRequestId) return; // 防止重复点击
-        // 1. 加权随机选鱼
-        let rand = Math.random() * GAME_CONFIG.totalWeight;
-        let selected = FISH_TABLE[0];
-        for (const fish of FISH_TABLE) {
-          rand -= (7 - fish.rarity);
-          if (rand <= 0) { 
-            selected = fish; 
-            break; 
-          };
+        // 获取等待提竿成功的鱼
+        if (!window.HappyFishingFish) {
+          console.error('HappyFishingFish 模块未加载');
+          return;
         }
-        state.currentFish = selected; 
-        // 2. 生成最终鱼对象
-        const weight = (Math.random() * (selected.weightMax - selected.weightMin) + selected.weightMin).toFixed(2);
-        const hue = selected.rarity <= 3 ? 180 + selected.rarity * 30 : selected.rarity * 10;
-        state.pendingFish = {
-          name: selected.name,
-          rarity: selected.rarity,
-          weight: parseFloat(weight),
-          timestamp: Date.now(),
-          signature: "玩家昵称#1234",
-          colorHue: hue,
-          sizeLevel: selected.rarity
-        };
+        state.pendingFish = window.HappyFishingFish.generateRandomFish();
         // 3. 延迟执行下沉动画
         setTimeout(() => {
           this._sinkBobber(() => { 
@@ -206,7 +136,7 @@ window.HappyFishing = (()=>{
             state.fishingStartTime = Date.now();
             console.log("鱼已上钩！请在指示器变绿时长按起鱼", state.pendingFish);
           });
-        }, selected.sinkTime);
+        }, state.pendingFish.sinkTime);
       };
       mini.appendChild(btn);
       state.btn = btn; 
@@ -347,8 +277,8 @@ window.HappyFishing = (()=>{
       const startMatchScoreTick = () => {
         if (state.matchScoreTimer) clearInterval(state.matchScoreTimer);
         const interval = getRandomInRange(GAME_CONFIG.matchTickInterval);
-        const up = state.currentFish?.scoreUpSpeed || 0; 
-        const down = state.currentFish?.scoreDownSpeed || 0;
+        const up = state.pendingFish?.scoreUpSpeed || 0; 
+        const down = state.pendingFish?.scoreDownSpeed || 0;
 
         state.matchScoreTimer = setInterval(() => {
           if (!state.indicator?.parentNode) return;

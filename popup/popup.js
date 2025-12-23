@@ -104,6 +104,6 @@ document.getElementById('openFishpond').addEventListener('click', () => {
 });
 // 查看公共鱼池
 document.getElementById('openPublicFishpond').addEventListener('click', () => {
-  chrome.tabs.create({ url: chrome.runtime.getURL('fishpond-public.html') });
+  chrome.tabs.create({ url: chrome.runtime.getURL('fishpond-public/fishpond-public.html') });
   window.close();
 });

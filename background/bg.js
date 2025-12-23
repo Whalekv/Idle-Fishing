@@ -4,7 +4,7 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
     chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
       chrome.scripting.executeScript({
         target: { tabId: tabs[0].id },
-        files: ['overlay.js']
+        files: ['content/overlay.js']
       });
     });
   }
