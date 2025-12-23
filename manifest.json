@@ -19,8 +19,7 @@
       "content/game/fish.js",
       "content/game/core.js",
       "content/game/ui.js",
-      "content/game/sync.js",
-      "sync.js"
+      "content/game/sync.js"
     ],
     "run_at": "document_end",
     "all_frames": false

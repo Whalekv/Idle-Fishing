@@ -8,7 +8,7 @@
     all: initial !important;
     position: fixed !important;
     inset: 0 !important;
-    background: url('${chrome.runtime.getURL('pond.svg')}') center/cover no-repeat !important;
+    background: url('${chrome.runtime.getURL('assets/pond.svg')}') center/cover no-repeat !important;
     backdrop-filter: blur(8px) !important;
     z-index: 2147483647 !important;
     pointer-events: auto !important;

@@ -1,6 +1,5 @@
 // 游戏核心逻辑模块：纯状态机 + 规则，不涉及任何 DOM 操作
 
-const { now } = require("core-js/core/date");
 
 (()=>{
     if (!window.HappyFishingConfig || !window.HappyFishingFish) {
