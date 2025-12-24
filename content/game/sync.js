@@ -1,5 +1,5 @@
 // 只负责：签名加载 + 跨 Tab 同步 + 全局 HappyFishing 接口（调用 UI + Core）
-
+// +++和core.js之间的关联方式，看不懂
 (() => {
     if (window.HappyFishing) {
         console.warn('HappyFishing 已经初始化，阻止重复注入');
@@ -31,12 +31,13 @@
         uiInstance = window.HappyFishingUI.createMiniWindow({
             position: pos,
             onPress: () => currentGame?.press(),
-            onRelease: () => currentGame?.release()
+            onRelease: () => currentGame?.release(),
+            onTriggerBite: () => currentGame?.triggerBite(),
         });
 
         // 创建核心游戏实例
         currentGame = window.HappyFishingCore.createGame({
-            onUpdate: (data) => uiInstance?.updata?.(data), // +++
+            onUpdate: (data) => uiInstance?.update?.(data), // +++
             onSinkStart: () => uiInstance?.sinkStart?.(),
             onSinkComplete: () => uiInstance?.sinkComplete?.(),
             onBiteStart: () => uiInstance?.showIndicator?.(),
@@ -67,7 +68,8 @@
             },
             onRemove: () => {
                 uiInstance?.remove?.();
-            }
+            },
+
         });
 
         // 开始游戏

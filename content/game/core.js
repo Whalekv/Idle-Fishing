@@ -55,16 +55,26 @@
             console.log("新鱼生成，准备咬钩：", this.state.pendingFish);
 
             // 随机延迟后触发咬钩
-            const delay = getRandomInRange(INDICATOR_CONFIG.firstDelay);
+            const delay = this.state.pendingFish.sinkTime || getRandomInRange(INDICATOR_CONFIG.firstDelay);
+
             this.state.timers.biteDelay = setTimeout(() => {
                 this.state.currentFish = { ...this.state.pendingFish };
                 this.state.pendingFish = null;
 
-                this.onBiteStart();
-                this._startSinkAnimation();
-                this._startIndicatorColorSwitch();
+                console.log('执行咬钩');
+                
             }, delay);
         };
+
+        // 触发咬钩
+        triggerBite() {
+            if (!this.state.currentFish || this.state.sinkRequestId) return; // 防止重复
+
+            this.onBiteStart();
+            this._startSinkAnimation();
+            this._startIndicatorColorSwitch();
+            console.log('咬钩触发：鱼漂下沉 + 指示器出现');
+        }
 
         // 鼠标按下，开始拉杆
         press() {
@@ -81,8 +91,9 @@
             if (!this.state.currentFish || !this.state.isPressing) return;
             this.state.isPressing = false;
 
-            // 进度条开始下降
-            this._startProgressForward();
+            // 进度条开始下降 + 启动匹配检查
+            this._startProgressBackward();
+            this._startMatchCheck();
         };
 
         // 强制结束游戏（移除小窗时调用）
@@ -125,7 +136,7 @@
             if (this.state.progressRaf) cancelAnimationFrame(this.state.progressRaf);
 
             const animate = () => {
-                this.state.progress = Math.max(this.state.progress - GAME_CONFIG.progressBackwardSpeed);
+                this.state.progress = Math.max(this.state.progress - GAME_CONFIG.progressBackwardSpeed, 0);
                 const color = this._getProgressColor(this.state.progress);
                 this.onUpdate({ progress: this.state.progress, progressColor: color });
 
@@ -197,11 +208,14 @@
                     this.onSuccess(this.state.currentFish);
                     this.destroy();
                 }
+
+                console.log('得分:', this.state.matchScore);
             }, interval);
         };
 
         // 开启鱼漂下沉动画
         _startSinkAnimation() {
+            console.log('开启鱼漂下沉动画方法');
             this.onSinkStart();
             const duration = GAME_CONFIG.bobberSinkAnimationDuration;
             const startTime = performance.now();
