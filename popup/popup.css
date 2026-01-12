@@ -1,3 +1,169 @@
-* {
-    margin: 0;
-}
+ * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+    }
+
+    body {
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+        background-color: #f5f5f5;
+    }
+
+    .container {
+        width: 300px;
+        height: 500px;
+        margin: 20px auto;
+        background-color: #ffffff;
+        border-radius: 12px;
+        overflow: hidden;
+        display: flex;
+        flex-direction: column;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+    }
+
+    /* 签名区域（顶部） */
+    .signature-container {
+        padding: 20px;
+        background-color: #f8f9fa;
+        border-bottom: 1px solid #e9ecef;
+    }
+
+    .signature-input,
+    .password-input {
+        width: 100%;
+        height: 44px;
+        margin-bottom: 12px;
+        padding: 0 12px;
+        border: 1px solid #ced4da;
+        border-radius: 8px;
+        font-size: 16px;
+    }
+
+    .signature-input::placeholder,
+    .password-input::placeholder {
+        color: #6c757d;
+    }
+
+    .signature-btn-container {
+        display: flex;
+        gap: 12px;
+        margin-top: 8px;
+    }
+
+    .signature-btn,
+    .re-enter-btn {
+        flex: 1;
+        height: 44px;
+        border: none;
+        border-radius: 8px;
+        font-size: 16px;
+        cursor: pointer;
+    }
+
+    .signature-btn {
+        background-color: #007bff;
+        color: white;
+    }
+
+    .signature-btn:hover {
+        background-color: #0056b3;
+    }
+
+    .re-enter-btn {
+        background-color: #6c757d;
+        color: white;
+    }
+
+    .re-enter-btn:hover {
+        background-color: #5a6268;
+    }
+
+    /* 钓鱼操作区域 */
+    .fishing-container {
+        padding: 20px;
+        display: flex;
+        justify-content: space-between;
+        gap: 12px;
+    }
+
+    .start-fishing-btn,
+    .close-mini-win {
+        flex: 1;
+        height: 48px;
+        border: none;
+        border-radius: 8px;
+        font-size: 16px;
+        font-weight: 500;
+        cursor: pointer;
+    }
+
+    .start-fishing-btn {
+        background-color: #28a745;
+        color: white;
+    }
+
+    .start-fishing-btn:hover {
+        background-color: #218838;
+    }
+
+    .close-mini-win {
+        background-color: #dc3545;
+        color: white;
+    }
+
+    .close-mini-win:hover {
+        background-color: #c82333;
+    }
+
+    /* 鱼塘查看区域 */
+    .fishpond-container {
+        padding: 0 20px 20px;
+        display: flex;
+        gap: 12px;
+    }
+
+    .open-fishpond-btn {
+        flex: 1;
+        height: 48px;
+        border: none;
+        border-radius: 8px;
+        background-color: #17a2b8;
+        color: white;
+        font-size: 16px;
+        cursor: pointer;
+    }
+
+    .open-fishpond-btn:hover {
+        background-color: #138496;
+    }
+
+    /* 图片区域（剩余空间） */
+    .picture {
+        flex: 1;
+        background-color: #e9ecef;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 16px;
+        color: #6c757d;
+    }
+
+    /* ── 禁用状态视觉反馈 ── */
+    input:disabled,
+    textarea:disabled,
+    button:disabled {
+    opacity: 0.68;
+    cursor: not-allowed;
+    background-color: #f1f3f5;
+    color: #6c757d;
+    }
+
+    button:disabled {
+    box-shadow: none;
+    }
+
+    .signature-btn:disabled {
+    background-color: #a5b4fc;
+    color: #ffffff;
+    opacity: 0.80;
+    }

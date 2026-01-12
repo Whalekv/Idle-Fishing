@@ -3,118 +3,32 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link rel="stylesheet" href="popup.css">
     <title>Start Fishing</title>
+    <link rel="stylesheet" href="popup.css">
 </head>
 <body>
     <div class="container">
-        <input class="signature-input" type="text" placeholder="请输入昵称">
-        <input class="password-input" type="password" placeholder="请输入4位数密码" minlength="4" maxlength="4">
-        <button class="signature-btn">确定签名</button>
-        <button class="re-enter-btn">重新签名</button>
-        <button class="start-fishing-btn">Start Fishing</button>
-        <button class="close-mini-win">Close</button>
-        <button id="openFishpond" class="open-fishpond-btn">查看鱼塘</button>
-        <button id="openPublicFishpond" class="open-fishpond-btn">公共鱼池</button>
+        <div class="signature-container">
+            <input class="signature-input" type="text" placeholder="请输入昵称">
+            <input class="password-input" type="password" placeholder="请输入4位数密码" minlength="4" maxlength="4">
+            <div class="signature-btn-container">
+                <button class="signature-btn">确定签名</button>
+                <button class="re-enter-btn">重新签名</button>
+            </div>
+        </div>
+
+        <div class="fishing-container">
+            <button class="start-fishing-btn">开始钓鱼</button>
+            <button class="close-mini-win">结束钓鱼</button>
+        </div>
+
+        <div class="fishpond-container">
+            <button id="openFishpond" class="open-fishpond-btn">查看鱼塘</button>
+            <button id="openPublicFishpond" class="open-fishpond-btn">公共鱼池</button>
+        </div>
+
+        <div class="picture">图片区域</div>
     </div>
-    <script src="popup.js"></script>
+    <script src="popup.js" defer></script>
 </body>
 </html>
-
-<style>
-.container {
-    background-color:rgb(81, 0, 203);
-    width: 300px;
-    height: 500px;
-    padding: 0;
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    align-items: center;
-}
-.start-fishing-btn{
-    width: 100px;
-    height: 50px;
-}
-.close-mini-win{
-    width: 100px;
-    height: 50px;
-}
-.open-fishpond-btn {
-  width: 100px;
-  height: 50px;
-  margin-top: 15px;
-  background: #ff9800;
-  color: white;
-  border: none;
-  border-radius: 8px;
-  font-size: 16px;
-  cursor: pointer;
-}
-.open-fishpond-btn:hover {
-  background: #f57c00;
-}
-.signature-input {
-  width: 200px;
-  height: 50px;
-  padding: 10px;
-  margin: 15px;
-  font-size: 16px;
-  border: none;
-  border-radius: 8px;
-  box-sizing: border-box;
-}
-.password-input {
-  width: 200px;
-  height: 50px;
-  padding: 10px;
-  margin-bottom: 15px;
-  font-size: 16px;
-  border: none;
-  border-radius: 8px;
-  box-sizing: border-box;
-}
-.signature-btn {
-  width: 100px;
-  height: 50px;
-  margin-top: 15px;
-  margin-bottom: 15px;
-  background: #5be388;
-  color: white;
-  border: none;
-  border-radius: 8px;
-  font-size: 16px;
-  cursor: pointer;
-}
-.signature-btn:hover {
-  background: #3bb062;
-}
-.re-enter-btn {
-  width: 100px;
-  height: 50px;
-  margin-bottom: 15px;
-  background: #5bd3e3;
-  color: white;
-  border: none;
-  border-radius: 8px;
-  font-size: 16px;
-  cursor: pointer;
-}
-.re-enter-btn:hover {
-  background: #3bb0b9;
-}
-.openPublicFishpond{
-  width: 100px;
-  height: 50px;
-  margin-bottom: 15px;
-  background: #6be35b;
-  color: white;
-  border: none;
-  border-radius: 8px;
-  font-size: 16px;
-  cursor: pointer;
-}
-.openPublicFishpond:hover {
-  background: #3bb062;
-}
-</style>
