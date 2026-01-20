@@ -98,11 +98,13 @@
 
         // 强制结束游戏（移除小窗时调用）
         destroy() {
+            
             this._clearAllTimers();
             if (this.state.sinkRequestId) cancelAnimationFrame(this.state.sinkRequestId);
             if (this.state.progressRaf) cancelAnimationFrame(this.state.progressRaf)
             this.onRemove();
             this.resetState();
+            // console.log('强制结束执行');
         };
 
         // ================= 私有方法 =================

@@ -31,9 +31,9 @@
 	overlay.onclick = (e) => {
 		const pos = { x: e.clientX, y: e.clientY };
 		localStorage.setItem("happy-fishing-pos", JSON.stringify(pos));
-
 		// 立即在本页生成小窗（使用新接口）
 		if (window.HappyFishing && window.HappyFishing.spawn) {
+            console.log('立即生成成功');
 			window.HappyFishing.spawn(pos);
 		}
 

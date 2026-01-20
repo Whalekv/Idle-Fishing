@@ -1,9 +1,9 @@
 // popup.js
-let userSignature = '';
-let savedNickname = '';
-let savedPassword = '';
+let userSignature = ''; //用户签名
+let savedNickname = ''; //用户名
+let savedPassword = ''; //密码
 
-// 轻量确定性哈希函数
+// 轻量确定性哈希函数，通过用户名和密码确定签名后缀
 function generateId(nickname, password) {
   const str = nickname + password + "haveagoodtime.";
   let hash = 0;
@@ -16,46 +16,53 @@ function generateId(nickname, password) {
   return hash.toString(36).slice(0, 6).padEnd(6, '0');
 }
 
-// 页面加载时恢复上一次输入
-chrome.storage.local.get(['savedNickname', 'savedPassword', 'fishingSignature'], (result) => {
-  if (result.savedNickname && result.savedPassword) {
-    document.querySelector('.signature-input').value = result.savedNickname;
-    document.querySelector('.password-input').value = result.savedPassword;
-    savedNickname = result.savedNickname;
-    savedPassword = result.savedPassword;
-    userSignature = `${result.savedNickname}${generateId(result.savedNickname, result.savedPassword)}`;
-
-    // 如果已有签名，禁用按钮并显示已签名状态
-    if (result.fishingSignature) {
-      document.querySelector('.signature-btn').textContent = '已签名';
-      document.querySelector('.signature-btn').disabled = true;
-      document.querySelector('.signature-input').disabled = true;
-      document.querySelector('.password-input').disabled = true;
+// 页面加载时恢复上一次输入 [[pp1]]
+async function initializeSignature() {
+    try {
+        const result = await chrome.storage.local.get(['savedNickname', 'savedPassword', 'userSignature']);
+        if (result.savedNickname && result.savedPassword) {
+            document.querySelector('.signature-input').value = result.savedNickname;
+            document.querySelector('.password-input').value = result.savedPassword;
+            savedNickname = result.savedNickname;
+            savedPassword = result.savedPassword;
+            //签名 = 用户名 + 签名后缀
+            userSignature = `${result.savedNickname}${generateId(result.savedNickname, result.savedPassword)}`;
+            // 如果已有签名，禁用按钮并显示已签名状态
+            if (result.userSignature) {
+                document.querySelector('.signature-btn').textContent = '已签名';
+                document.querySelector('.signature-btn').disabled = true;
+                document.querySelector('.signature-input').disabled = true;
+                document.querySelector('.password-input').disabled = true;
+            }
+        }
+    } catch (error) {
+        console.error("读取存储失败:", error);
     }
-  }
-});
+}
+
+initializeSignature();
 
 // 确定签名按钮
 document.querySelector('.signature-btn').addEventListener('click', () => {
-  const nickname = document.querySelector('.signature-input').value.trim();
-  const password = document.querySelector('.password-input').value.trim();
+    const nickname = document.querySelector('.signature-input').value.trim();
+    const password = document.querySelector('.password-input').value.trim();
 
-  if (!nickname || password.length !== 4 || !/^\d{4}$/.test(password)) {
+    if (!nickname || password.length !== 4 || !/^\d{4}$/.test(password)) {
     alert('请正确输入昵称和4位数字密码');
     return;
-  }
+    }
 
-  // 保存昵称和密码（用于下次自动填充）
-  chrome.storage.local.set({
+    // 保存昵称和密码（用于下次自动填充）
+    chrome.storage.local.set({
     savedNickname: nickname,
     savedPassword: password
-  });
+    });
 
-  const id = generateId(nickname, password);
-  userSignature = `${nickname}${id}`;
+    const id = generateId(nickname, password);
+    userSignature = `${nickname}${id}`;
 
-  // 保存最终签名
-  chrome.storage.local.set({ fishingSignature: userSignature }, () => {
+    // 保存最终签名
+    chrome.storage.local.set({ userSignature: userSignature }, () => {
     alert(`签名成功！\n你的签名：${userSignature}`);
 
     // 禁用输入和按钮
@@ -63,12 +70,12 @@ document.querySelector('.signature-btn').addEventListener('click', () => {
     document.querySelector('.password-input').disabled = true;
     document.querySelector('.signature-btn').textContent = '已签名';
     document.querySelector('.signature-btn').disabled = true;
-  });
+    });
 });
 
 // 重新输入按钮
 document.querySelector('.re-enter-btn').addEventListener('click', () => {
-  chrome.storage.local.remove(['savedNickname', 'savedPassword', 'fishingSignature'], () => {
+  chrome.storage.local.remove(['savedNickname', 'savedPassword', 'userSignature'], () => {
     alert('已删除签名,请重新输入');
   });
   document.querySelector('.signature-input').value = '';
@@ -81,15 +88,14 @@ document.querySelector('.re-enter-btn').addEventListener('click', () => {
 })
 
 // Start Fishing 按钮
-document.querySelector('.start-fishing-btn').addEventListener('click', () => {
-  chrome.storage.local.get('fishingSignature', (result) => {
-    if (!result.fishingSignature) {
+document.querySelector('.start-fishing-btn').addEventListener('click', async () => {
+    const result = await chrome.storage.local.get('userSignature');
+    if (!result.userSignature) {
       alert('请先签名！');
       return;
     }
     chrome.runtime.sendMessage({ action: 'start' });
     window.close();
-  });
 });
 
 // 关闭按钮
@@ -107,3 +113,6 @@ document.getElementById('openPublicFishpond').addEventListener('click', () => {
   chrome.tabs.create({ url: chrome.runtime.getURL('fishpond-public/fishpond-public.html') });
   window.close();
 });
+
+
+

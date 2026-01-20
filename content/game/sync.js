@@ -8,11 +8,16 @@
 
     // ================= 签名加载 =================
     let GLOBAL_SIGNATURE = '';
-    chrome.storage.local.get('fishingSignature', (result) => {
+    //     if (result.fishingSignature) {
+    //         GLOBAL_SIGNATURE = result.fishingSignature;
+    //     }
+    // });
+    (async () => {
+        const result = await chrome.storage.local.get('fishingSignature');
         if (result.fishingSignature) {
             GLOBAL_SIGNATURE = result.fishingSignature;
         }
-    });
+    })();
     chrome.storage.onChanged.addListener((changes) => {
         if (changes.fishingSignature) {
             GLOBAL_SIGNATURE = changes.fishingSignature.newValue || '';
@@ -20,7 +25,7 @@
     });
 
     // ================= 存储Key =================
-    const { STORAGE_KEY } = window.HappyFishingConfig;
+    const { STORAGE_KEY } = window.HappyFishingConfig; //[[cgs1]]
 
     // ================= 游戏实例 =================
     let currentGame = null;
@@ -76,6 +81,7 @@
         currentGame.start();
     };
 
+    //[[cgs2]]
     const removeGame = () => {
         currentGame?.destroy();
         currentGame = null;
@@ -107,13 +113,12 @@
             localStorage.setItem(STORAGE_KEY.position, JSON.stringify(pos));
             initGame(pos); // 本页立即生效
         },
-        remove: removeGame,
+        remove: removeGame, //[[cgs1]]
         reset: removeGame
     };
 
     console.log('HappyFishing 同步模块加载完成（已切换到新核心）');
 
     // 向下兼容旧调用
-    window.HappyFishingSpawn = (pos) => window.HappyFishing.spawn(pos);
     window.RemoveMinWin = () => window.HappyFishing.remove();
 })()
