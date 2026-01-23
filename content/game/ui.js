@@ -48,20 +48,6 @@
             clip-path: inset(0 0 0 0 round ${UI_CONFIG.progressCornerRadius}px);
         `;
 
-		// ==================== 红色按钮（点击抽鱼） ====================
-		const btn = document.createElement("button");
-		btn.style.cssText = `
-            all: initial !important;
-            position: absolute !important;
-            left: 10px !important;
-            width: ${UI_CONFIG.buttonSize}px !important;
-            height: ${UI_CONFIG.buttonSize}px !important;
-            background: ${UI_CONFIG.buttonColor} !important;
-            border-radius: 50% !important;
-            cursor: pointer !important;
-        `;
-		mini.appendChild(btn);
-
 		// ==================== 鱼漂 ====================
 		const bobber = document.createElement("div");
 		bobber.style.cssText = `
@@ -209,14 +195,6 @@
 
 		// 挂载后下一帧计算，确保 SVG 已渲染
 		requestAnimationFrame(initProgressDash);
-
-		// 点击按钮触发抽鱼（由 core.start() 控制沉浮时间）
-		btn.onclick = (e) => {
-			e.stopPropagation();
-			if (onTriggerBite) {
-                onTriggerBite();
-            }
-		};
 
 		console.log("HappyFishing UI 小窗已创建");
 

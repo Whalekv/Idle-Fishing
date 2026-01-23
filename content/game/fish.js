@@ -52,7 +52,8 @@
             name: baseFish.name,
             rarity: baseFish.rarity,
             weight: weight,
-            sinkTime: baseFish.sinkTime,
+            sinkTimeMin: baseFish.sinkTimeMin,
+            sinkTimeMax: baseFish.sinkTimeMax,
             difficulty: baseFish.difficulty,
             scoreUpSpeed: baseFish.scoreUpSpeed,
             scoreDownSpeed: baseFish.scoreDownSpeed

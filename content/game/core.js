@@ -11,19 +11,21 @@
     const { generateRandomFish } = window.HappyFishingFish;
 
     class FishingGame {
+        
         constructor(options = {}) {
             this.onUpdate = options.onUpdate || (() => {});                     // 状态变化时通知UI
             this.onSinkStart = options.onSinkStart || (() => {});               // 鱼漂开始下沉
             this.onSinkComplete = options.onSinkComplete || (() => {});         // 鱼漂下沉动画结束
             this.onBiteStart = options.onBiteStart || (() => {});               // 开始显示咬钩指示器
-            this.onSuccess = options.onSuccess || (() => {});                       // 钓鱼成功
+            this.onSuccess = options.onSuccess || (() => {});                   // 钓鱼成功
             this.onFail = options.onFail || (() => {});                         // 钓鱼失败、跑鱼
             this.onRemove = options.onRemove || (() => {});                     // 游戏结束清理
 
-            this.resetState();
+            this.resetState();//[[cgc1]] 
         }
 
         resetState() {
+            //[[cgc2]]
             this.state = {
                 pendingFish: null,                  // 当前等待钓的鱼（生成后但为咬钩）
                 currentFish: null,                  // 当前上钩的鱼（咬钩后）
@@ -48,19 +50,18 @@
         };
 
         // ================= 公共方法 =================
-
+        // [[cgc3]]
         // 开始钓鱼（鱼漂放下后调用）
         start() {
             this.state.pendingFish = generateRandomFish();
             console.log("新鱼生成，准备咬钩：", this.state.pendingFish);
-
-            // 随机延迟后触发咬钩
-            const delay = this.state.pendingFish.sinkTime || getRandomInRange(INDICATOR_CONFIG.firstDelay);
-
+            // 随机延迟后触发咬钩[[cgc5]]
+            const delay = getRandomInRange({min: this.state.pendingFish.sinkTimeMin, max: this.state.pendingFish.sinkTimeMax});
+            console.log('延迟时间：', delay);
             this.state.timers.biteDelay = setTimeout(() => {
                 this.state.currentFish = { ...this.state.pendingFish };
                 this.state.pendingFish = null;
-
+                this.triggerBite();
                 console.log('执行咬钩');
                 
             }, delay);
@@ -206,7 +207,7 @@
                 }
 
                 // 成功判定
-                if (this.state.matchScore >= 100) {
+                if (this.state.matchScore >= GAME_CONFIG.successfulScore) {
                     this.onSuccess(this.state.currentFish);
                     this.destroy();
                 }
@@ -244,14 +245,14 @@
 
         // 清除所有计时器
         _clearAllTimers() {
-            Object.values(this.state.timers).forEach(id => id && clearTimeout(id)); // +++
+            Object.values(this.state.timers).forEach(id => id && clearTimeout(id)); // [[cgc4]]
             if (this.state.timers.matchCheck) clearInterval(this.state.timers.matchCheck);
             this.state.timers = { biteDelay: null, colorSwitch: null, matchCheck: null };
         };
     };
 
     window.HappyFishingCore = {
-        createGame: (options) => new FishingGame(options) // +++
+        createGame: (options) => new FishingGame(options)
     };
 
     console.log('HappyFishingCore 模块加载完成');
