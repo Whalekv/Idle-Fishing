@@ -23,9 +23,31 @@
 
     /* 签名区域（顶部） */
     .signature-container {
+        position: relative;
         padding: 20px;
         background-color: #f8f9fa;
         border-bottom: 1px solid #e9ecef;
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+    }
+
+    .lang-btn {
+        align-self: flex-end;      /* 靠右 */
+        background: transparent;
+        border: 1px solid #ced4da;
+        border-radius: 4px;
+        padding: 2px 6px;
+        font-size: 12px;
+        cursor: pointer;
+        color: #6c757d;
+        transition: all 0.2s;
+        margin-bottom: 4px;     
+    }
+
+    .lang-btn:hover {
+        background-color: #e9ecef;
+        color: #495057;
     }
 
     .signature-input,

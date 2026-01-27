@@ -26,6 +26,11 @@
 	 */
 	const createMiniWindow = ({ position, onPress, onRelease, onTriggerBite }) => {
 		const { x, y } = position;
+        // 防重复：如果已存在旧的 mini，先移除
+        const existed = document.getElementById("happy-fishing-mini");
+        if (existed) {
+            try { existed.remove(); } catch {}
+        }
 		const mini = document.createElement("div");
 		mini.id = "happy-fishing-mini";
 		mini.style.cssText = `
@@ -179,8 +184,23 @@
 			}
 		};
 
+		// 新增：下沉开始/结束的 UI 钩子，避免出现残留的静止 bobber
+		const sinkStart = () => {
+			// 提前启用 transform 的优化，避免绘制残影
+			bobber.style.willChange = "transform";
+			// 确保开始时可见
+			bobber.style.opacity = "1";
+		};
+
+		const sinkComplete = () => {
+			// 动画结束后将 bobber 隐藏，防止仍在原始位置看到静止的 bobber
+			bobber.style.opacity = "0";
+            bobber.style.willChange = "auto";
+		};
+
 		const resetBobber = () => {
 			bobber.style.transform = "translateX(-50%) translateY(0px)";
+			bobber.style.opacity = "1"; // 恢复可见性
 			if (indicator.parentNode) {
 				indicator.remove();
 			}
@@ -202,6 +222,8 @@
 			mini,
 			update,
 			showIndicator,
+			sinkStart,
+			sinkComplete,
 			resetBobber,
 			remove,
 		};

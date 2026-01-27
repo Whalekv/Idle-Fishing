@@ -21,6 +21,10 @@
             this.onFail = options.onFail || (() => {});                         // 钓鱼失败、跑鱼
             this.onRemove = options.onRemove || (() => {});                     // 游戏结束清理
 
+            // 新增：支持预设的鱼与统一的咬钩时间
+            this.initialFish = options.initialFish || null;
+            this.initialBiteAt = options.initialBiteAt || null;
+
             this.resetState();//[[cgc1]] 
         }
 
@@ -53,11 +57,18 @@
         // [[cgc3]]
         // 开始钓鱼（鱼漂放下后调用）
         start() {
-            this.state.pendingFish = generateRandomFish();
+            // 支持跨标签共享的鱼：若提供 initialFish 则使用它，否则生成随机鱼
+            const pending = this.initialFish || generateRandomFish();
+            this.state.pendingFish = pending;
             console.log("新鱼生成，准备咬钩：", this.state.pendingFish);
-            // 随机延迟后触发咬钩[[cgc5]]
-            const delay = getRandomInRange({min: this.state.pendingFish.sinkTimeMin, max: this.state.pendingFish.sinkTimeMax});
-            console.log('延迟时间：', delay);
+            // 随机或统一延迟后触发咬钩[[cgc5]]
+            let delay;
+            if (typeof this.initialBiteAt === 'number') {
+                delay = Math.max(0, this.initialBiteAt - Date.now());
+            } else {
+                delay = getRandomInRange({min: this.state.pendingFish.sinkTimeMin, max: this.state.pendingFish.sinkTimeMax});
+            }
+
             this.state.timers.biteDelay = setTimeout(() => {
                 this.state.currentFish = { ...this.state.pendingFish };
                 this.state.pendingFish = null;
@@ -257,4 +268,3 @@
 
     console.log('HappyFishingCore 模块加载完成');
 })()
-
