@@ -32,64 +32,99 @@
       font-size: 20px;
       opacity: 0.9;
     }
+    .search-bar {
+      margin-top: 16px;
+      display: flex;
+      justify-content: center;
+    }
+    .search-bar input {
+      width: 260px;
+      max-width: 80%;
+      padding: 8px 12px;
+      border-radius: 999px;
+      border: none;
+      outline: none;
+      font-size: 14px;
+    }
     .fish-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-      gap: 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
       max-width: 1400px;
-      margin: 40px auto;
+      margin: 20px auto;
       padding: 0 10px;
     }
     .fish-card {
-      background: rgba(255,255,255,0.15);
-      border-radius: 16px;
-      padding: 20px;
+      display: grid;
+      grid-template-columns: minmax(100px, 1.5fr) 100px 120px 1.5fr 1fr 40px;
+      align-items: center;
+      gap: 15px;
+      background: rgba(255,255,255,0.1);
+      border-radius: 8px;
+      padding: 8px 16px;
       backdrop-filter: blur(10px);
-      border: 1px solid rgba(255,255,255,0.2);
-      transition: transform 0.3s, box-shadow 0.3s;
+      border: 1px solid rgba(255,255,255,0.1);
+      transition: background 0.2s;
     }
     .fish-card:hover {
-      transform: translateY(-8px);
-      box-shadow: 0 20px 40px rgba(0,0,0,0.4);
+      background: rgba(255,255,255,0.18);
     }
     .fish-name {
-      font-size: 28px;
+      font-size: 16px;
       font-weight: bold;
-      margin-bottom: 8px;
+      margin: 0;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
     }
     .fish-weight {
-      font-size: 20px;
-      margin: 8px 0;
+      font-size: 15px;
+      margin: 0;
+      color: #eee;
     }
     .rarity {
-      font-size: 24px;
-      margin: 12px 0;
-      letter-spacing: 4px;
+      font-size: 14px;
+      margin: 0;
+      letter-spacing: 1px;
+      color: #ffd700;
+      white-space: nowrap;
     }
     .timestamp {
-      font-size: 14px;
+      font-size: 13px;
       opacity: 0.7;
-      margin-top: 16px;
+      margin: 0;
+      white-space: nowrap;
     }
     .fish-signature {
-      font-size: 14px;
-      opacity: 0.7;
-      margin-top: 16px;
+      font-size: 13px;
+      opacity: 0.6;
+      margin: 0;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .select-wrapper {
+      margin: 0;
+      display: flex;
+      justify-content: center;
     }
     .empty {
-        grid-column: 1 / -1;
         text-align: center;
-        font-size: 28px;
-        padding: 100px 20px;
-        opacity: 0.8;
-        line-height: 1.8;
+        font-size: 20px;
+        padding: 40px;
         background: rgba(0,0,0,0.2);
-        border-radius: 20px;
-        margin: 40px 20px;
+        border-radius: 12px;
     }
-    @media (max-width: 640px) {
-      h1 { font-size: 32px; }
-      .fish-grid { grid-template-columns: 1fr; }
+    @media (max-width: 900px) {
+      .fish-card {
+        grid-template-columns: 1fr 1fr;
+        gap: 8px;
+        padding: 12px;
+      }
+      .fish-name { grid-column: 1 / -1; font-size: 18px; }
+      .fish-signature { grid-column: 1 / -1; }
+      .select-wrapper { position: absolute; top: 10px; right: 10px; }
+      .fish-card { position: relative; }
     }
     .select-wrapper input[type="checkbox"] {
       width: 20px;
@@ -110,6 +145,9 @@
     <header>
         <h1>公共鱼池</h1>
         <div class="stats">共有 <span id="total">0</span> 条鱼</div>
+        <div class="search-bar">
+          <input id="signatureSearch" type="text" placeholder="按签名搜索鱼..." />
+        </div>
     </header>
 
     <div class="fish-grid" id="fishGrid">

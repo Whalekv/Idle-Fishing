@@ -20,6 +20,7 @@ function initPublicFishpond() {
   const { PUBLIC_GIST_ID, GITHUB_TOKEN, GIST_FILENAME } = window.FISH_POND_CONFIG;
 
   let publicFishes = [];
+  let filterSignature = '';
   const selectedFishes = new Set(); // 存储选中的鱼（用唯一键 timestamp|signature）
 
   // 生成唯一键
@@ -60,21 +61,29 @@ function initPublicFishpond() {
     const totalEl = document.getElementById('total');
     const bulkActions = document.getElementById('bulkActions');
     const selectedCountEl = document.getElementById('selectedCount');
+    const lowerFilter = filterSignature.trim().toLowerCase();
+    const fishesToRender = lowerFilter
+      ? publicFishes.filter(fish =>
+          (fish.signature || '').toLowerCase().includes(lowerFilter)
+        )
+      : publicFishes;
 
-    totalEl.textContent = publicFishes.length;
+    totalEl.textContent = fishesToRender.length;
     selectedCountEl.textContent = selectedFishes.size;
 
     // 显示/隐藏批量操作栏
     bulkActions.style.display = selectedFishes.size > 0 ? 'block' : 'none';
 
     grid.innerHTML = '';
-    if (publicFishes.length === 0) {
-      grid.innerHTML = `<div class="empty">公共鱼池空空如也～</div>`;
+    if (fishesToRender.length === 0) {
+      grid.innerHTML = `<div class="empty">${
+        publicFishes.length === 0 ? '公共鱼池空空如也～' : '没有找到匹配该签名的鱼～'
+      }</div>`;
       return;
     }
 
     const fragment = document.createDocumentFragment();
-    publicFishes.forEach((fish) => {
+    fishesToRender.forEach((fish) => {
       const card = document.createElement('div');
       card.className = 'fish-card';
 
@@ -87,14 +96,13 @@ function initPublicFishpond() {
       const isSelected = selectedFishes.has(key);
 
       card.innerHTML = `
-        <div class="fish-name">${fish.name}</div>
-        <div class="fish-weight">重量：${fish.weight.toFixed(2)} kg</div>
-        <div class="rarity">${'★'.repeat(fish.rarity)} <small style="opacity:0.7; font-size:16px;">${fish.rarity}/6</small></div>
-        <div class="timestamp">捕获时间：${timeStr}</div>
-        <div class="fish-signature">签名：${fish.signature}</div>
-        <div class="select-wrapper" style="margin-top:16px; text-align:center;">
-          <input type="checkbox" class="select-checkbox" id="chk-${key}" ${isSelected ? 'checked' : ''}>
-          <label for="chk-${key}" style="cursor:pointer; user-select:none; color:#ffeb3b; font-weight:bold;">选中删除</label>
+        <div class="fish-name" title="${fish.name}">${fish.name}</div>
+        <div class="fish-weight">${fish.weight.toFixed(2)} kg</div>
+        <div class="rarity" title="稀有度：${fish.rarity}">${'★'.repeat(fish.rarity)}</div>
+        <div class="timestamp">${timeStr}</div>
+        <div class="fish-signature" title="${fish.signature || '无签名'}">${fish.signature || '-'}</div>
+        <div class="select-wrapper">
+          <input type="checkbox" class="select-checkbox" id="chk-${key}" ${isSelected ? 'checked' : ''} title="选中">
         </div>
       `;
 
@@ -114,6 +122,16 @@ function initPublicFishpond() {
     });
 
     grid.appendChild(fragment);
+  }
+
+  function initSearch() {
+    const input = document.getElementById('signatureSearch');
+    if (!input) return;
+
+    input.addEventListener('input', () => {
+      filterSignature = input.value;
+      renderFishes();
+    });
   }
 
   // 批量删除函数
@@ -222,4 +240,5 @@ function initPublicFishpond() {
   // 页面加载完成
   loadAndRender();
   initBulkActions();
+  initSearch();
 }
