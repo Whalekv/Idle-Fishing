@@ -1,5 +1,18 @@
 // fishpond-public.js（批量删除版本）
 
+// 轻量确定性哈希函数，通过用户名和密码确定签名后缀
+function generateId(nickname, password) {
+  const str = nickname + password + "haveagoodtime.";
+  let hash = 0;
+  const utf8 = new TextEncoder().encode(str);
+  for (let i = 0; i < utf8.length; i++) {
+    hash = ((hash << 5) - hash) + utf8[i];
+    hash = hash & hash;
+  }
+  hash = Math.abs(hash);
+  return hash.toString(36).slice(0, 6).padEnd(6, '0');
+}
+
 const configScript = document.createElement('script');
 configScript.src = chrome.runtime.getURL('config.js');
 configScript.onload = function() {
@@ -22,6 +35,7 @@ function initPublicFishpond() {
   let publicFishes = [];
   let filterSignature = '';
   const selectedFishes = new Set(); // 存储选中的鱼（用唯一键 timestamp|signature）
+  let currentSelectedSignature = ''; // 当前选中的签名，用于过滤显示
 
   // 生成唯一键
   function getFishKey(fish) {
@@ -62,17 +76,28 @@ function initPublicFishpond() {
     const bulkActions = document.getElementById('bulkActions');
     const selectedCountEl = document.getElementById('selectedCount');
     const lowerFilter = filterSignature.trim().toLowerCase();
-    const fishesToRender = lowerFilter
+    let fishesToRender = lowerFilter
       ? publicFishes.filter(fish =>
           (fish.signature || '').toLowerCase().includes(lowerFilter)
         )
       : publicFishes;
 
+    // 如果有选中的签名，只显示相同签名的鱼
+    if (currentSelectedSignature) {
+      fishesToRender = fishesToRender.filter(fish =>
+        fish.signature === currentSelectedSignature
+      );
+    }
+
     totalEl.textContent = fishesToRender.length;
     selectedCountEl.textContent = selectedFishes.size;
 
-    // 显示/隐藏批量操作栏
+    // 显示/隐藏批量操作栏和全选按钮
     bulkActions.style.display = selectedFishes.size > 0 ? 'block' : 'none';
+    const selectAllBtn = document.getElementById('selectAllBtn');
+    if (selectAllBtn) {
+      selectAllBtn.style.display = selectedFishes.size > 0 ? 'inline-block' : 'none';
+    }
 
     grid.innerHTML = '';
     if (fishesToRender.length === 0) {
@@ -110,12 +135,34 @@ function initPublicFishpond() {
       const checkbox = card.querySelector('.select-checkbox');
       checkbox.addEventListener('change', () => {
         if (checkbox.checked) {
+          // 检查是否已经有选中的签名
+          if (selectedFishes.size === 0) {
+            // 首次选中，设置当前签名
+            currentSelectedSignature = fish.signature;
+          } else {
+            // 不是首次选中，检查签名是否相同
+            if (fish.signature !== currentSelectedSignature) {
+              alert('只能选择相同签名的鱼');
+              checkbox.checked = false;
+              return;
+            }
+          }
           selectedFishes.add(key);
         } else {
           selectedFishes.delete(key);
+          // 如果没有选中的鱼了，重置当前签名
+          if (selectedFishes.size === 0) {
+            currentSelectedSignature = '';
+          }
         }
         selectedCountEl.textContent = selectedFishes.size;
         bulkActions.style.display = selectedFishes.size > 0 ? 'block' : 'none';
+        const selectAllBtn = document.getElementById('selectAllBtn');
+        if (selectAllBtn) {
+          selectAllBtn.style.display = selectedFishes.size > 0 ? 'inline-block' : 'none';
+        }
+        // 重新渲染以更新显示
+        renderFishes();
       });
 
       fragment.appendChild(card);
@@ -145,6 +192,13 @@ function initPublicFishpond() {
       return;
     }
 
+    // 验证密码
+    const password = prompt('请输入4位数密码以验证签名：');
+    if (!password || password.length !== 4 || !/^\d{4}$/.test(password)) {
+      alert('密码格式错误，请输入4位数字密码');
+      return;
+    }
+
     try {
       // 1. 获取最新 Gist 内容
       const getRes = await fetch(`https://api.github.com/gists/${PUBLIC_GIST_ID}`, {
@@ -160,14 +214,33 @@ function initPublicFishpond() {
       if (!file) throw new Error('Gist 文件名错误');
       let currentFishes = JSON.parse(file.content || '[]');
 
-      // 2. 过滤掉所有选中的鱼
+      // 2. 验证签名密码
       const keysToDelete = Array.from(selectedFishes);
+      const fishesToDelete = currentFishes.filter(fish => {
+        const key = getFishKey(fish);
+        return keysToDelete.includes(key);
+      });
+
+      // 验证每条鱼的签名
+      for (const fish of fishesToDelete) {
+        if (fish.signature) {
+          // 提取昵称（签名的前部分，去掉最后6位哈希值）
+          const nickname = fish.signature.slice(0, -6);
+          // 生成签名并验证
+          const expectedSignature = `${nickname}${generateId(nickname, password)}`;
+          if (expectedSignature !== fish.signature) {
+            throw new Error('密码错误，签名验证失败');
+          }
+        }
+      }
+
+      // 3. 过滤掉所有选中的鱼
       currentFishes = currentFishes.filter(fish => {
         const key = getFishKey(fish);
         return !keysToDelete.includes(key);
       });
 
-      // 3. 更新 Gist（只发一次请求）
+      // 4. 更新 Gist（只发一次请求）
       const updateRes = await fetch(`https://api.github.com/gists/${PUBLIC_GIST_ID}`, {
         method: 'PATCH',
         headers: {
@@ -191,6 +264,7 @@ function initPublicFishpond() {
 
       alert(`成功删除 ${selectedFishes.size} 条鱼！`);
       selectedFishes.clear(); // 清空选择
+      currentSelectedSignature = ''; // 重置当前选中的签名
       await loadAndRender();  // 只 reload 一次
     } catch (err) {
       console.error(err);
@@ -219,6 +293,18 @@ function initPublicFishpond() {
       display: none;
     `;
     bulkDiv.innerHTML = `
+      <button id="selectAllBtn" style="
+        padding: 12px 32px;
+        font-size: 18px;
+        background: #1976d2;
+        color: white;
+        border: none;
+        border-radius: 8px;
+        cursor: pointer;
+        margin-right: 16px;
+      ">
+        全选
+      </button>
       <button id="bulkDeleteBtn" style="
         padding: 12px 32px;
         font-size: 18px;
@@ -233,6 +319,26 @@ function initPublicFishpond() {
     `;
 
     container.appendChild(bulkDiv);
+
+    // 全选按钮事件
+    document.getElementById('selectAllBtn').addEventListener('click', () => {
+      if (!currentSelectedSignature) {
+        alert('请先选中一条鱼');
+        return;
+      }
+      
+      // 选中所有相同签名的鱼
+      publicFishes.forEach(fish => {
+        if (fish.signature === currentSelectedSignature) {
+          const key = getFishKey(fish);
+          selectedFishes.add(key);
+        }
+      });
+      
+      // 更新显示
+      selectedCountEl.textContent = selectedFishes.size;
+      renderFishes();
+    });
 
     document.getElementById('bulkDeleteBtn').addEventListener('click', bulkDelete);
   }
