@@ -17,6 +17,7 @@
     header {
       text-align: center;
       padding: 30px 20px;
+
     }
     h1 {
       font-size: 42px;
@@ -135,18 +136,21 @@
     #emptyHint {
       position: absolute;
       top: 50%;
-      left: 50%;
-      transform: translate(-50%, -50%);
+      left: 0;
+      right: 0;
+      transform: translateY(-50%);
       font-size: 28px;
       text-align: center;
-      width: 100%;
+      max-width: 320px;
+      width: 90%;
+      margin: 0 auto;
       pointer-events: none;
       z-index: 0;
     }
 
     /* 隐藏滚动条美化（可选） */
     .fish-list-panel::-webkit-scrollbar {
-      width: 8px;
+      display: none;
     }
     .fish-list-panel::-webkit-scrollbar-thumb {
       background: rgba(255,255,255,0.3);
