@@ -2,15 +2,17 @@
     body, html {
       height: 100%;
       font-family: system-ui, -apple-system, sans-serif;
-      background: #0a3d62 url('pond.svg') center/cover no-repeat fixed;
+      background: url('../assets/cao.png') center/cover no-repeat fixed;
       color: white;
       overflow-x: hidden;
     }
     .container {
       min-height: 100vh;
       padding: 20px;
-      backdrop-filter: blur(8px);
-      background: rgba(0,0,0,0.25);
+      /* backdrop-filter: blur(2px); */
+      /* background: rgba(0,0,0,0.25); */
+      z-index: 2;
+      position: relative;
     }
     header {
       text-align: center;
@@ -69,7 +71,9 @@
       aspect-ratio: 15 / 7; /* 可选：保持比例，避免太扁 */
       overflow: hidden;
       border-radius: 20px;
-      box-shadow: 0 10px 30px rgba(0,0,0,0.4);
+      background: url('../assets/pond.png') center/cover no-repeat;
+      z-index: 1;
+      box-shadow: inset 0 0 50px rgba(0, 0, 0, 0.5), inset 0 0 100px rgba(0, 0, 0, 0.3);
     }
 
     .fish-canvas {
