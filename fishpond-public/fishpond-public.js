@@ -13,6 +13,89 @@ function generateId(nickname, password) {
   return hash.toString(36).slice(0, 6).padEnd(6, '0');
 }
 
+const i18n = {
+    zh: {
+        pageTitle: "公共鱼池",
+        publicPond: "公共鱼池",
+        totalStats: "共有 <span id=\"total\">0</span> 条鱼",
+        searchPlaceholder: "按签名搜索鱼...",
+        emptyHint: "还没有钓到鱼哦～快去钓鱼吧！",
+        emptyNoMatch: "没有找到匹配该签名的鱼～",
+        emptyPond: "公共鱼池空空如也～",
+        selectAll: "全选",
+        deleteSelected: "删除选中",
+        alertSelectFirst: "请先选中要删除的鱼",
+        alertConfirmDelete: "确定要删除选中的 {count} 条鱼吗？\n此操作不可恢复！",
+        alertPasswordPrompt: "请输入4位数密码以验证签名：",
+        alertPasswordError: "密码格式错误，请输入4位数字密码",
+        alertSignatureError: "密码错误，签名验证失败",
+        alertDeleteSuccess: "成功删除 {count} 条鱼！",
+        alertDeleteFailed: "批量删除失败：",
+        alertSelectFishFirst: "请先选中一条鱼",
+        alertSameSignature: "只能选择相同签名的鱼",
+        rarity: "稀有度",
+        noSignature: "无签名"
+    },
+    en: {
+        pageTitle: "Public Pond",
+        publicPond: "Public Pond",
+        totalStats: "Total: <span id=\"total\">0</span> fish",
+        searchPlaceholder: "Search by signature...",
+        emptyHint: "No fish yet~ Go fishing!",
+        emptyNoMatch: "No matching fish found~",
+        emptyPond: "Public pond is empty~",
+        selectAll: "Select All",
+        deleteSelected: "Delete",
+        alertSelectFirst: "Please select fish to delete first",
+        alertConfirmDelete: "Delete {count} selected fish?\nThis action cannot be undone!",
+        alertPasswordPrompt: "Enter 4-digit password to verify signature:",
+        alertPasswordError: "Invalid password, please enter 4-digit password",
+        alertSignatureError: "Password error, signature verification failed",
+        alertDeleteSuccess: "Successfully deleted {count} fish!",
+        alertDeleteFailed: "Bulk delete failed:",
+        alertSelectFishFirst: "Please select a fish first",
+        alertSameSignature: "Can only select fish with same signature",
+        rarity: "Rarity",
+        noSignature: "No signature"
+    }
+};
+
+let currentLang = 'zh';
+
+function updateLanguage(lang) {
+    currentLang = lang;
+    const texts = i18n[lang];
+    
+    document.querySelectorAll('[data-i18n]').forEach(el => {
+        const key = el.dataset.i18n;
+        if (texts[key]) {
+            el.innerHTML = texts[key];
+        }
+    });
+
+    document.querySelectorAll('[data-i18n-placeholder]').forEach(el => {
+        const key = el.dataset.i18nPlaceholder;
+        if (texts[key]) {
+            el.placeholder = texts[key];
+        }
+    });
+
+    const selectAllBtn = document.getElementById('selectAllBtn');
+    const deleteSelectedBtn = document.getElementById('bulkDeleteBtn');
+    if (selectAllBtn && texts.selectAll) {
+        const selectAllSpan = selectAllBtn.querySelector('[data-i18n="selectAll"]');
+        if (selectAllSpan) {
+            selectAllSpan.textContent = texts.selectAll;
+        }
+    }
+    if (deleteSelectedBtn && texts.deleteSelected) {
+        const deleteSelectedSpan = deleteSelectedBtn.querySelector('[data-i18n="deleteSelected"]');
+        if (deleteSelectedSpan) {
+            deleteSelectedSpan.textContent = texts.deleteSelected;
+        }
+    }
+}
+
 const configScript = document.createElement('script');
 configScript.src = chrome.runtime.getURL('config.js'); //[[ffp1]]
 configScript.onload = function() {
@@ -31,6 +114,26 @@ function initPublicFishpond() {
   }
 
   const { PUBLIC_GIST_ID, GITHUB_TOKEN, GIST_FILENAME } = window.FISH_POND_CONFIG;
+
+  async function initializeLanguage() {
+    try {
+      const result = await chrome.storage.local.get('language');
+      const lang = result.language || 'zh';
+      updateLanguage(lang);
+    } catch (error) {
+      console.error('读取语言设置失败:', error);
+      updateLanguage('zh');
+    }
+  }
+
+  initializeLanguage();
+
+  chrome.storage.onChanged.addListener((changes, area) => {
+    if (area === 'local' && changes.language) {
+      updateLanguage(changes.language.newValue);
+      renderFishes();
+    }
+  });
 
   let publicFishes = [];
   let filterSignature = '';
@@ -74,6 +177,7 @@ function initPublicFishpond() {
     const totalEl = document.getElementById('total');
     const bulkActions = document.getElementById('bulkActions');
     const selectedCountEl = document.getElementById('selectedCount');
+    const texts = i18n[currentLang];
     const lowerFilter = filterSignature.trim().toLowerCase();
     let fishesToRender = lowerFilter
       ? publicFishes.filter(fish =>
@@ -81,7 +185,6 @@ function initPublicFishpond() {
         )
       : publicFishes;
 
-    // 如果有选中的签名，只显示相同签名的鱼
     if (currentSelectedSignature) {
       fishesToRender = fishesToRender.filter(fish =>
         fish.signature === currentSelectedSignature
@@ -91,7 +194,6 @@ function initPublicFishpond() {
     totalEl.textContent = fishesToRender.length;
     selectedCountEl.textContent = selectedFishes.size;
 
-    // 显示/隐藏批量操作栏和全选按钮
     bulkActions.style.display = selectedFishes.size > 0 ? 'block' : 'none';
     const selectAllBtn = document.getElementById('selectAllBtn');
     if (selectAllBtn) {
@@ -101,7 +203,7 @@ function initPublicFishpond() {
     grid.innerHTML = '';
     if (fishesToRender.length === 0) {
       grid.innerHTML = `<div class="empty">${
-        publicFishes.length === 0 ? '公共鱼池空空如也～' : '没有找到匹配该签名的鱼～'
+        publicFishes.length === 0 ? texts.emptyPond : texts.emptyNoMatch
       }</div>`;
       return;
     }
@@ -111,7 +213,7 @@ function initPublicFishpond() {
       const card = document.createElement('div');
       card.className = 'fish-card';
 
-      const timeStr = new Date(fish.timestamp).toLocaleString('zh-CN', {
+      const timeStr = new Date(fish.timestamp).toLocaleString(currentLang === 'zh' ? 'zh-CN' : 'en-US', {
         year: 'numeric', month: '2-digit', day: '2-digit',
         hour: '2-digit', minute: '2-digit', second: '2-digit'
       }).replace(/\//g, '-');
@@ -122,26 +224,22 @@ function initPublicFishpond() {
       card.innerHTML = `
         <div class="fish-name" title="${fish.name}">${fish.name}</div>
         <div class="fish-weight">${fish.weight.toFixed(2)} kg</div>
-        <div class="rarity" title="稀有度：${fish.rarity}">${'★'.repeat(fish.rarity)}</div>
+        <div class="rarity" title="${texts.rarity}：${fish.rarity}">${'★'.repeat(fish.rarity)}</div>
         <div class="timestamp">${timeStr}</div>
-        <div class="fish-signature" title="${fish.signature || '无签名'}">${fish.signature || '-'}</div>
+        <div class="fish-signature" title="${fish.signature || texts.noSignature}">${fish.signature || '-'}</div>
         <div class="select-wrapper">
           <input type="checkbox" class="select-checkbox" id="chk-${key}" ${isSelected ? 'checked' : ''} title="选中">
         </div>
       `;
 
-      // 复选框事件
       const checkbox = card.querySelector('.select-checkbox');
       checkbox.addEventListener('change', () => {
         if (checkbox.checked) {
-          // 检查是否已经有选中的签名
           if (selectedFishes.size === 0) {
-            // 首次选中，设置当前签名
             currentSelectedSignature = fish.signature;
           } else {
-            // 不是首次选中，检查签名是否相同
             if (fish.signature !== currentSelectedSignature) {
-              alert('只能选择相同签名的鱼');
+              alert(texts.alertSameSignature);
               checkbox.checked = false;
               return;
             }
@@ -149,7 +247,6 @@ function initPublicFishpond() {
           selectedFishes.add(key);
         } else {
           selectedFishes.delete(key);
-          // 如果没有选中的鱼了，重置当前签名
           if (selectedFishes.size === 0) {
             currentSelectedSignature = '';
           }
@@ -160,7 +257,6 @@ function initPublicFishpond() {
         if (selectAllBtn) {
           selectAllBtn.style.display = selectedFishes.size > 0 ? 'inline-block' : 'none';
         }
-        // 重新渲染以更新显示
         renderFishes();
       });
 
@@ -182,24 +278,24 @@ function initPublicFishpond() {
 
   // 批量删除函数
   async function bulkDelete() {
+    const texts = i18n[currentLang];
     if (selectedFishes.size === 0) {
-      alert('请先选中要删除的鱼');
+      alert(texts.alertSelectFirst);
       return;
     }
 
-    if (!confirm(`确定要删除选中的 ${selectedFishes.size} 条鱼吗？\n此操作不可恢复！`)) {
+    const confirmMsg = texts.alertConfirmDelete.replace('{count}', selectedFishes.size);
+    if (!confirm(confirmMsg)) {
       return;
     }
 
-    // 验证密码
-    const password = prompt('请输入4位数密码以验证签名：');
+    const password = prompt(texts.alertPasswordPrompt);
     if (!password || password.length !== 4 || !/^\d{4}$/.test(password)) {
-      alert('密码格式错误，请输入4位数字密码');
+      alert(texts.alertPasswordError);
       return;
     }
 
     try {
-      // 1. 获取最新 Gist 内容
       const getRes = await fetch(`https://api.github.com/gists/${PUBLIC_GIST_ID}`, {
         headers: {
           'Accept': 'application/vnd.github.v3+json',
@@ -213,33 +309,27 @@ function initPublicFishpond() {
       if (!file) throw new Error('Gist 文件名错误');
       let currentFishes = JSON.parse(file.content || '[]');
 
-      // 2. 验证签名密码
       const keysToDelete = Array.from(selectedFishes);
       const fishesToDelete = currentFishes.filter(fish => {
         const key = getFishKey(fish);
         return keysToDelete.includes(key);
       });
 
-      // 验证每条鱼的签名
       for (const fish of fishesToDelete) {
         if (fish.signature) {
-          // 提取昵称（签名的前部分，去掉最后6位哈希值）
           const nickname = fish.signature.slice(0, -6);
-          // 生成签名并验证
           const expectedSignature = `${nickname}${generateId(nickname, password)}`;
           if (expectedSignature !== fish.signature) {
-            throw new Error('密码错误，签名验证失败');
+            throw new Error(texts.alertSignatureError);
           }
         }
       }
 
-      // 3. 过滤掉所有选中的鱼
       currentFishes = currentFishes.filter(fish => {
         const key = getFishKey(fish);
         return !keysToDelete.includes(key);
       });
 
-      // 4. 更新 Gist（只发一次请求）
       const updateRes = await fetch(`https://api.github.com/gists/${PUBLIC_GIST_ID}`, {
         method: 'PATCH',
         headers: {
@@ -261,13 +351,14 @@ function initPublicFishpond() {
         throw new Error('更新失败：' + err);
       }
 
-      alert(`成功删除 ${selectedFishes.size} 条鱼！`);
-      selectedFishes.clear(); // 清空选择
-      currentSelectedSignature = ''; // 重置当前选中的签名
-      await loadAndRender();  // 只 reload 一次
+      const successMsg = texts.alertDeleteSuccess.replace('{count}', selectedFishes.size);
+      alert(successMsg);
+      selectedFishes.clear();
+      currentSelectedSignature = '';
+      await loadAndRender();
     } catch (err) {
       console.error(err);
-      alert('批量删除失败：' + err.message);
+      alert(texts.alertDeleteFailed + err.message);
     }
   }
 
@@ -383,50 +474,45 @@ function initPublicFishpond() {
           <polyline points="9 11 12 14 22 4"></polyline>
           <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"></path>
         </svg>
-        <span>全选</span>
+        <span data-i18n="selectAll">全选</span>
       </button>
       <button id="bulkDeleteBtn" class="bulk-btn btn-delete">
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
           <polyline points="3 6 5 6 21 6"></polyline>
           <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
         </svg>
-        <span>删除选中</span>
+        <span data-i18n="deleteSelected">删除选中</span>
         <span class="selected-badge" id="selectedCount">0</span>
       </button>
     `;
 
     container.appendChild(bulkDiv);
 
-    // 全选按钮事件
     document.getElementById('selectAllBtn').addEventListener('click', () => {
+      const texts = i18n[currentLang];
       if (!currentSelectedSignature) {
-        alert('请先选中一条鱼');
+        alert(texts.alertSelectFishFirst);
         return;
       }
       
-      // 获取所有相同签名的鱼
       const sameSignatureFishes = publicFishes.filter(fish => fish.signature === currentSelectedSignature);
       const sameSignatureCount = sameSignatureFishes.length;
       
-      // 检查是否已经全选
       const isAllSelected = selectedFishes.size === sameSignatureCount && sameSignatureFishes.every(fish => {
         const key = getFishKey(fish);
         return selectedFishes.has(key);
       });
       
       if (isAllSelected) {
-        // 取消所有选择
         selectedFishes.clear();
         currentSelectedSignature = '';
       } else {
-        // 选中所有相同签名的鱼
         sameSignatureFishes.forEach(fish => {
           const key = getFishKey(fish);
           selectedFishes.add(key);
         });
       }
       
-      // 更新显示
       renderFishes();
     });
 

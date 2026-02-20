@@ -3,24 +3,21 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>我的鱼塘 - Happy Fishing</title>
+  <title data-i18n="pageTitle">我的鱼塘 - Happy Fishing</title>
   <link rel="stylesheet" href="fishpond.css">
 </head>
 <body>
   <div class="container">
-    <!-- 左侧：鱼列表（可滚动） -->
     <div class="pond-layout">
       <div class="fish-list-panel">
-        <!-- 标题和统计 -->
         <header>
-          <h1>我的鱼塘</h1>
-          <div class="stats">共捕获 <span id="total">0</span> 条鱼</div>
+          <h1 data-i18n="myFishpond">我的鱼塘</h1>
+          <div class="stats" data-i18n="totalStats">共捕获 <span id="total">0</span> 条鱼</div>
         </header>
         <ul id="fishList" class="fish-list"></ul>
-        <div id="emptyHint" class="empty">还没有钓到鱼哦～快去钓鱼吧！</div>
+        <div id="emptyHint" class="empty" data-i18n="emptyHint">还没有钓到鱼哦～快去钓鱼吧！</div>
       </div>
 
-      <!-- 右侧：动画画布（覆盖背景） -->
       <canvas id="fishCanvas" class="fish-canvas"></canvas>
     </div>
   </div>

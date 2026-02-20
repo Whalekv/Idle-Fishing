@@ -3,21 +3,21 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>公共鱼池</title>
+  <title data-i18n="pageTitle">公共鱼池</title>
   <Link rel="stylesheet" href="fishpond-public.css">
 </head>
 <body>
   <div class="container">
     <header>
-        <h1>公共鱼池</h1>
-        <div class="stats">共有 <span id="total">0</span> 条鱼</div>
+        <h1 data-i18n="publicPond">公共鱼池</h1>
+        <div class="stats" data-i18n="totalStats">共有 <span id="total">0</span> 条鱼</div>
         <div class="search-bar">
-          <input id="signatureSearch" type="text" placeholder="按签名搜索鱼..." />
+          <input id="signatureSearch" type="text" data-i18n-placeholder="searchPlaceholder" placeholder="按签名搜索鱼..." />
         </div>
     </header>
 
     <div class="fish-grid" id="fishGrid">
-      <div class="empty">还没有钓到鱼哦～快去钓鱼吧！</div>
+      <div class="empty" data-i18n="emptyHint">还没有钓到鱼哦～快去钓鱼吧！</div>
     </div>
   </div>
   <script src="fishpond-public.js"></script>

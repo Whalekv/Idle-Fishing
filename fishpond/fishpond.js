@@ -1,5 +1,58 @@
 // fishpond.js
 
+const i18n = {
+    zh: {
+        pageTitle: "我的鱼塘 - Happy Fishing",
+        myFishpond: "我的鱼塘",
+        totalStats: "共捕获 <span id=\"total\">0</span> 条鱼",
+        emptyHint: "还没有钓到鱼哦～快去钓鱼吧！",
+        weight: "重量",
+        capturedTime: "捕获时间",
+        signature: "签名",
+        contributeBtn: "放入公共鱼池",
+        deleteBtn: "删除",
+        confirmContribute: "确定要把 {name} ({weight}kg) 放入公共鱼池吗？\n放入后本地记录将删除。",
+        confirmDelete: "确定要删除 {name} ({weight}kg) 吗？\n删除后无法恢复。",
+        contributeSuccess: "成功放入公共鱼池：{name} ({weight}kg)",
+        contributeExists: "\"{name}\" 已存在于公共鱼池，将删除本地记录。",
+        contributeFail: "放入失败（不删除本地记录，可重试）：{name}\n错误：{error}",
+        deleteSuccess: "已删除该鱼",
+        deleteFail: "删除失败，请刷新页面重试"
+    },
+    en: {
+        pageTitle: "My Fishpond - Happy Fishing",
+        myFishpond: "My Fishpond",
+        totalStats: "Total: <span id=\"total\">0</span> fish",
+        emptyHint: "No fish yet~ Go fishing!",
+        weight: "Weight",
+        capturedTime: "Captured",
+        signature: "Signature",
+        contributeBtn: "Share",
+        deleteBtn: "Delete",
+        confirmContribute: "Share {name} ({weight}kg) to public pond?\nLocal record will be deleted.",
+        confirmDelete: "Delete {name} ({weight}kg)?\nCannot be undone.",
+        contributeSuccess: "Shared to public pond: {name} ({weight}kg)",
+        contributeExists: "\"{name}\" already in public pond, deleting local record.",
+        contributeFail: "Share failed (not deleted, retry): {name}\nError: {error}",
+        deleteSuccess: "Fish deleted",
+        deleteFail: "Delete failed, please refresh"
+    }
+};
+
+let currentLang = 'zh';
+
+function updateLanguage(lang) {
+    currentLang = lang;
+    const texts = i18n[lang];
+    
+    document.querySelectorAll('[data-i18n]').forEach(el => {
+        const key = el.dataset.i18n;
+        if (texts[key]) {
+            el.innerHTML = texts[key];
+        }
+    });
+}
+
 const configScript = document.createElement('script');
 configScript.src = chrome.runtime.getURL('config.js');
 configScript.onload = function() {
@@ -23,11 +76,31 @@ function initFishpond() {
   let contributeQueue = [];
   let isContributing = false;
 
+  async function initializeLanguage() {
+    try {
+      const result = await chrome.storage.local.get('language');
+      const lang = result.language || 'zh';
+      updateLanguage(lang);
+    } catch (error) {
+      console.error('读取语言设置失败:', error);
+      updateLanguage('zh');
+    }
+  }
+
+  initializeLanguage();
+
+  chrome.storage.onChanged.addListener((changes, area) => {
+    if (area === 'local' && changes.language) {
+      updateLanguage(changes.language.newValue);
+      renderFishes();
+    }
+  });
+
   async function loadAndRender() {
     try {
       const result = await chrome.storage.local.get('myFishes');
       allFishes = Array.isArray(result.myFishes) ? result.myFishes : [];
-      allFishes = allFishes.slice().reverse(); // 最新在前
+      allFishes = allFishes.slice().reverse();
       renderFishes();
     } catch (err) {
       console.error('读取鱼塘数据失败：', err);
@@ -40,10 +113,10 @@ function initFishpond() {
     const list = document.getElementById('fishList');
     const totalEl = document.getElementById('total');
     const emptyHint = document.getElementById('emptyHint');
+    const texts = i18n[currentLang];
 
     totalEl.textContent = allFishes.length;
 
-    // 清空列表
     list.innerHTML = '';
 
     if (allFishes.length === 0) {
@@ -53,42 +126,45 @@ function initFishpond() {
 
     emptyHint.style.display = 'none';
 
-    // 最新鱼在上
     const fragment = document.createDocumentFragment();
 
     for (let i = 0; i < allFishes.length; i++) {
       const fish = allFishes[i];
-      const originalIndex = allFishes.length - 1 - i; // 用于按钮事件中的索引
+      const originalIndex = allFishes.length - 1 - i;
 
       const li = document.createElement('li');
 
-      const timeStr = new Date(fish.timestamp).toLocaleString('zh-CN', {
+      const timeStr = new Date(fish.timestamp).toLocaleString(currentLang === 'zh' ? 'zh-CN' : 'en-US', {
         year: 'numeric', month: '2-digit', day: '2-digit',
         hour: '2-digit', minute: '2-digit', second: '2-digit'
       }).replace(/\//g, '-');
 
       li.innerHTML = `
         <div class="fish-name">${fish.name}</div>
-        <div class="fish-weight">重量：${fish.weight.toFixed(2)} kg</div>
+        <div class="fish-weight">${texts.weight}：${fish.weight.toFixed(2)} kg</div>
         <div class="rarity">${'★'.repeat(fish.rarity)} <small style="opacity:0.7;">${fish.rarity}/6</small></div>
-        <div class="timestamp">捕获时间：${timeStr}</div>
-        <div class="fish-signature">签名：${fish.signature}</div>
+        <div class="timestamp">${texts.capturedTime}：${timeStr}</div>
+        <div class="fish-signature">${texts.signature}：${fish.signature}</div>
         <div class="btn-group" style="margin-top:12px; display:flex; gap:8px;">
-          <button class="contribute-btn">放入公共鱼池</button>
-          <button class="delete-btn">删除</button>
+          <button class="contribute-btn">${texts.contributeBtn}</button>
+          <button class="delete-btn">${texts.deleteBtn}</button>
         </div>
       `;
 
-      // 放入公共鱼池按钮
       li.querySelector('.contribute-btn').addEventListener('click', () => {
-        if (confirm(`确定要把 ${fish.name} (${fish.weight.toFixed(2)}kg) 放入公共鱼池吗？\n放入后本地记录将删除。`)) {
+        const confirmMsg = texts.confirmContribute
+          .replace('{name}', fish.name)
+          .replace('{weight}', fish.weight.toFixed(2));
+        if (confirm(confirmMsg)) {
           contributeFish(fish, originalIndex);
         }
       });
 
-      // 删除按钮
       li.querySelector('.delete-btn').addEventListener('click', () => {
-        if (confirm(`确定要删除 ${fish.name} (${fish.weight.toFixed(2)}kg) 吗？\n删除后无法恢复。`)) {
+        const confirmMsg = texts.confirmDelete
+          .replace('{name}', fish.name)
+          .replace('{weight}', fish.weight.toFixed(2));
+        if (confirm(confirmMsg)) {
           deleteFish(originalIndex);
         }
       });
@@ -127,11 +203,11 @@ function initFishpond() {
       myFishes.splice(originalIndex, 1);
       await chrome.storage.local.set({ myFishes });
 
-      alert('已删除该鱼');
+      alert(i18n[currentLang].deleteSuccess);
       loadAndRender();
     } catch (err) {
       console.error('删除失败：', err);
-      alert('删除失败，请刷新页面重试');
+      alert(i18n[currentLang].deleteFail);
     }
   }
 
@@ -143,30 +219,25 @@ function initFishpond() {
 
     isContributing = true;
     const { fish, originalIndex } = contributeQueue.shift();
+    const texts = i18n[currentLang];
 
-    let shouldDeleteLocal = false;  // 标记是否需要删除本地
+    let shouldDeleteLocal = false;
 
     try {
-      // console.log('开始处理队列中的一条鱼：', fish.name, fish.weight, fish.timestamp);
-      // 1. 获取最新公共池
       const cacheBust = Date.now();
-      // console.log('获取 Gist URL（带缓存破坏）:', `https://api.github.com/gists/${PUBLIC_GIST_ID}?ts=${cacheBust}`);
       const getRes = await fetch(`https://api.github.com/gists/${PUBLIC_GIST_ID}?ts=${cacheBust}`);
       if (!getRes.ok) throw new Error('获取公共池失败');
       const gistData = await getRes.json();
       const file = gistData.files[GIST_FILENAME];
       if (!file) throw new Error('Gist 文件名错误');
       let publicFishes = JSON.parse(file.content || '[]');
-      // console.log('获取到 Gist 当前长度：', publicFishes.length, '完整内容：', publicFishes);
-      // 2. 防重
+
       if (publicFishes.some(f => f.signature === fish.signature && f.timestamp === fish.timestamp)) {
-        alert(`"${fish.name}" 已存在于公共鱼池，将删除本地记录。`);
-        shouldDeleteLocal = true;  // 已存在也删本地
+        alert(texts.contributeExists.replace('{name}', fish.name));
+        shouldDeleteLocal = true;
       } else {
         publicFishes.push(fish);
-        // console.log('追加后新长度：', publicFishes.length);
 
-        // 3. 更新 Gist
         const updateRes = await fetch(`https://api.github.com/gists/${PUBLIC_GIST_ID}`, {
           method: 'PATCH',
           headers: {
@@ -188,23 +259,22 @@ function initFishpond() {
           throw new Error('更新 Gist 失败：' + err);
         }
 
-        alert(`成功放入公共鱼池：${fish.name} (${fish.weight.toFixed(2)}kg)`);
-        shouldDeleteLocal = true;  // 成功上传才删本地
-        // console.log('PATCH 更新成功，理论新长度：', publicFishes.length);
+        alert(texts.contributeSuccess
+          .replace('{name}', fish.name)
+          .replace('{weight}', fish.weight.toFixed(2)));
+        shouldDeleteLocal = true;
       }
 
     } catch (err) {
       console.error(err);
-      alert(`放入失败（不删除本地记录，可重试）：${fish.name}\n错误：${err.message}`);
-      // 失败不删除本地
+      alert(texts.contributeFail
+        .replace('{name}', fish.name)
+        .replace('{error}', err.message));
     } finally {
-      // 只有在需要时才删除本地（放在 finally 避免异常漏删）
       if (shouldDeleteLocal) {
-        // 为了安全，这里重新读取最新 myFishes（避免 originalIndex 错位）
         const result = await chrome.storage.local.get('myFishes');
         let myFishes = result.myFishes || [];
 
-        // 用鱼的 timestamp + signature 匹配要删除的（更可靠，不依赖索引）
         const deleteIdx = myFishes.findIndex(f => 
           f.timestamp === fish.timestamp && f.signature === fish.signature
         );
@@ -213,10 +283,9 @@ function initFishpond() {
           await chrome.storage.local.set({ myFishes });
         }
 
-        loadAndRender();  // 刷新显示
+        loadAndRender();
       }
 
-      // 继续处理队列下一条（递归调用）
       processQueue();
     }
   }
