@@ -14,7 +14,7 @@ function generateId(nickname, password) {
 }
 
 const configScript = document.createElement('script');
-configScript.src = chrome.runtime.getURL('config.js');
+configScript.src = chrome.runtime.getURL('config.js'); //[[ffp1]]
 configScript.onload = function() {
   initPublicFishpond();
 };
@@ -34,7 +34,7 @@ function initPublicFishpond() {
 
   let publicFishes = [];
   let filterSignature = '';
-  const selectedFishes = new Set(); // 存储选中的鱼（用唯一键 timestamp|signature）
+  const selectedFishes = new Set(); // 存储选中的鱼（用唯一键 timestamp|signature）[[ffp2]]
   let currentSelectedSignature = ''; // 当前选中的签名，用于过滤显示
 
   // 生成唯一键
@@ -52,7 +52,7 @@ function initPublicFishpond() {
         },
         cache: 'reload'
       });
-
+      console.log('getRes:', getRes);
       if (!getRes.ok) throw new Error('加载失败');
       const gistData = await getRes.json();
       const file = gistData.files[GIST_FILENAME];
@@ -281,40 +281,118 @@ function initPublicFishpond() {
     bulkDiv.id = 'bulkActions';
     bulkDiv.style.cssText = `
       position: fixed;
-      bottom: 20px;
+      bottom: 24px;
       left: 50%;
-      transform: translateX(-50%);
-      background: rgba(244, 67, 54, 0.9);
-      padding: 16px 32px;
-      border-radius: 12px;
-      box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+      transform: translateX(-50%) translateY(0);
+      padding: 20px 40px;
+      border-radius: 16px;
       z-index: 1000;
       text-align: center;
       display: none;
+      animation: slideUp 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     `;
     bulkDiv.innerHTML = `
-      <button id="selectAllBtn" style="
-        padding: 12px 32px;
-        font-size: 18px;
-        background: #1976d2;
-        color: white;
-        border: none;
-        border-radius: 8px;
-        cursor: pointer;
-        margin-right: 16px;
-      ">
-        全选
+      <style>
+        @keyframes slideUp {
+          from {
+            opacity: 0;
+            transform: translateX(-50%) translateY(20px);
+          }
+          to {
+            opacity: 1;
+            transform: translateX(-50%) translateY(0);
+          }
+        }
+        .bulk-btn {
+          padding: 14px 36px;
+          font-size: 16px;
+          font-weight: 600;
+          color: white;
+          border: none;
+          border-radius: 12px;
+          cursor: pointer;
+          margin: 0 10px;
+          transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+          display: inline-flex;
+          align-items: center;
+          gap: 8px;
+          box-shadow: 0 4px 14px rgba(0, 0, 0, 0.15);
+          position: relative;
+          overflow: hidden;
+        }
+        .bulk-btn::before {
+          content: '';
+          position: absolute;
+          top: 0;
+          left: -100%;
+          width: 100%;
+          height: 100%;
+          background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+          transition: left 0.5s;
+        }
+        .bulk-btn:hover::before {
+          left: 100%;
+        }
+        .bulk-btn:hover {
+          transform: translateY(-2px);
+          box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+        }
+        .bulk-btn:active {
+          transform: translateY(0);
+          box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+        }
+        .btn-select {
+          background: linear-gradient(135deg, #2196f3 0%, #1976d2 100%);
+        }
+        .btn-select:hover {
+          background: linear-gradient(135deg, #42a5f5 0%, #1e88e5 100%);
+        }
+        .btn-delete {
+          background: linear-gradient(135deg, #f44336 0%, #d32f2f 100%);
+        }
+        .btn-delete:hover {
+          background: linear-gradient(135deg, #ef5350 0%, #e53935 100%);
+        }
+        .btn-delete:disabled {
+          background: linear-gradient(135deg, #bdbdbd 0%, #9e9e9e 100%);
+          cursor: not-allowed;
+          transform: none;
+        }
+        .btn-delete:disabled:hover {
+          transform: none;
+          box-shadow: 0 4px 14px rgba(0, 0, 0, 0.15);
+        }
+        .btn-delete:disabled::before {
+          display: none;
+        }
+        .selected-badge {
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          min-width: 28px;
+          height: 28px;
+          padding: 0 10px;
+          background: rgba(255, 255, 255, 0.25);
+          border-radius: 8px;
+          font-size: 14px;
+          font-weight: 700;
+          margin-left: 4px;
+        }
+      </style>
+      <button id="selectAllBtn" class="bulk-btn btn-select">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="9 11 12 14 22 4"></polyline>
+          <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"></path>
+        </svg>
+        <span>全选</span>
       </button>
-      <button id="bulkDeleteBtn" style="
-        padding: 12px 32px;
-        font-size: 18px;
-        background: #d32f2f;
-        color: white;
-        border: none;
-        border-radius: 8px;
-        cursor: pointer;
-      ">
-        删除选中鱼（<span id="selectedCount">0</span>条）
+      <button id="bulkDeleteBtn" class="bulk-btn btn-delete">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="3 6 5 6 21 6"></polyline>
+          <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+        </svg>
+        <span>删除选中</span>
+        <span class="selected-badge" id="selectedCount">0</span>
       </button>
     `;
 
@@ -327,16 +405,29 @@ function initPublicFishpond() {
         return;
       }
       
-      // 选中所有相同签名的鱼
-      publicFishes.forEach(fish => {
-        if (fish.signature === currentSelectedSignature) {
-          const key = getFishKey(fish);
-          selectedFishes.add(key);
-        }
+      // 获取所有相同签名的鱼
+      const sameSignatureFishes = publicFishes.filter(fish => fish.signature === currentSelectedSignature);
+      const sameSignatureCount = sameSignatureFishes.length;
+      
+      // 检查是否已经全选
+      const isAllSelected = selectedFishes.size === sameSignatureCount && sameSignatureFishes.every(fish => {
+        const key = getFishKey(fish);
+        return selectedFishes.has(key);
       });
       
+      if (isAllSelected) {
+        // 取消所有选择
+        selectedFishes.clear();
+        currentSelectedSignature = '';
+      } else {
+        // 选中所有相同签名的鱼
+        sameSignatureFishes.forEach(fish => {
+          const key = getFishKey(fish);
+          selectedFishes.add(key);
+        });
+      }
+      
       // 更新显示
-      selectedCountEl.textContent = selectedFishes.size;
       renderFishes();
     });
 

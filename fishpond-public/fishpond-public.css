@@ -2,7 +2,7 @@
     body, html {
       height: 100%;
       font-family: system-ui, -apple-system, sans-serif;
-      background: #0a3d62 url('pond.svg') center/cover no-repeat fixed;
+      background: #2fcbff url('pond.svg') center/cover no-repeat fixed;
       color: white;
       overflow-x: hidden;
     }
