@@ -52,7 +52,6 @@ function initPublicFishpond() {
         },
         cache: 'reload'
       });
-      console.log('getRes:', getRes);
       if (!getRes.ok) throw new Error('加载失败');
       const gistData = await getRes.json();
       const file = gistData.files[GIST_FILENAME];
