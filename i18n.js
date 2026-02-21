@@ -44,7 +44,9 @@ const i18n = {
         alertSigned: "签名成功！\n你的签名：",
         alertDeleted: "已删除签名,请重新输入",
         alertNoSign: "请先签名！",
-        langBtn: "EN"
+        langBtn: "EN",
+        clickToSelect: "点击选择钓鱼位置",
+        allTabsSync: "所有标签页将同步"
     },
     en: {
         pageTitle: "My Fishpond - Happy Fishing",
@@ -91,7 +93,9 @@ const i18n = {
         alertSigned: "Signed successfully!\nYour signature: ",
         alertDeleted: "Signature deleted, please re-enter",
         alertNoSign: "Please sign first!",
-        langBtn: "中"
+        langBtn: "中",
+        clickToSelect: "Click to select fishing position",
+        allTabsSync: "All tabs will sync"
     }
 };
 
@@ -158,3 +162,13 @@ function generateId(nickname, password) {
   hash = Math.abs(hash);
   return hash.toString(36).slice(0, 6).padEnd(6, '0');
 }
+
+console.log('i18n.js: About to mount to window');
+window.i18n = i18n;
+window.updateLanguage = updateLanguage;
+window.getText = getText;
+console.log('i18n.js: Mounted to window', {
+  i18n: !!window.i18n,
+  updateLanguage: !!window.updateLanguage,
+  getText: !!window.getText
+});

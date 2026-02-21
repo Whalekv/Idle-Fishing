@@ -28,6 +28,7 @@
   "web_accessible_resources": [{
     "resources": [
       "content/overlay.js",
+      "i18n.js",
       "assets/pond.svg", 
       "assets/fishingFloat.svg",
       "fishpond/fishpond.js",
