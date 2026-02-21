@@ -29,6 +29,7 @@
     "resources": [
       "content/overlay.js",
       "i18n.js",
+      "i18n-data.js",
       "assets/pond.svg", 
       "assets/fishingFloat.svg",
       "fishpond/fishpond.js",
