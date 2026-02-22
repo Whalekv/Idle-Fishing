@@ -20,6 +20,48 @@ function initPublicFishpond() {
 
   const { PUBLIC_GIST_ID, GITHUB_TOKEN, GIST_FILENAME } = window.FISH_POND_CONFIG;
 
+  const FISH_NAME_MAP = {
+    zh: {
+      "shrimp": "小虾米",
+      "crucian": "鲫鱼",
+      "grass": "草鱼",
+      "black": "青鱼",
+      "silver": "鲢鱼",
+      "golden": "金龙鱼"
+    },
+    en: {
+      "shrimp": "Shrimp",
+      "crucian": "Crucian Carp",
+      "grass": "Grass Carp",
+      "black": "Black Carp",
+      "silver": "Silver Carp",
+      "golden": "Golden Dragonfish"
+    }
+  };
+
+  const FISH_KEY_MAP = {
+    "小虾米": "shrimp",
+    "鲫鱼": "crucian",
+    "草鱼": "grass",
+    "青鱼": "black",
+    "鲢鱼": "silver",
+    "金龙鱼": "golden",
+    "Shrimp": "shrimp",
+    "Crucian Carp": "crucian",
+    "Grass Carp": "grass",
+    "Black Carp": "black",
+    "Silver Carp": "silver",
+    "Golden Dragonfish": "golden"
+  };
+
+  function getFishName(fishName, lang) {
+    const current = lang || currentLang || 'zh';
+    const fishKey = FISH_KEY_MAP[fishName] || fishName;
+    const result = FISH_NAME_MAP[current]?.[fishKey] || FISH_NAME_MAP.zh[fishKey] || fishName;
+    console.log('getFishName called with:', fishName, 'lang param:', lang, 'currentLang:', currentLang, 'using:', current, 'fishKey:', fishKey, 'result:', result);
+    return result;
+  }
+
   async function initializeLanguage() {
     try {
       const result = await chrome.storage.local.get('language');
@@ -35,8 +77,11 @@ function initPublicFishpond() {
 
   chrome.storage.onChanged.addListener((changes, area) => {
     if (area === 'local' && changes.language) {
-      updateLanguage(changes.language.newValue);
-      renderFishes();
+      const newLang = changes.language.newValue;
+      console.log('Language changed to:', newLang, 'currentLang before update:', currentLang);
+      updateLanguage(newLang);
+      console.log('currentLang after update:', currentLang);
+      renderFishes(newLang);
     }
   });
 
@@ -77,12 +122,12 @@ function initPublicFishpond() {
     }
   }
 
-  function renderFishes() {
+  function renderFishes(lang) {
     const grid = document.getElementById('fishGrid');
     const totalEl = document.getElementById('total');
     const bulkActions = document.getElementById('bulkActions');
     const selectedCountEl = document.getElementById('selectedCount');
-    const texts = i18n[currentLang];
+    const texts = i18n[lang || currentLang];
     const lowerFilter = filterSignature.trim().toLowerCase();
     let fishesToRender = lowerFilter
       ? publicFishes.filter(fish =>
@@ -118,7 +163,7 @@ function initPublicFishpond() {
       const card = document.createElement('div');
       card.className = 'fish-card';
 
-      const timeStr = new Date(fish.timestamp).toLocaleString(getLangCode(currentLang), {
+      const timeStr = new Date(fish.timestamp).toLocaleString(getLangCode(lang || currentLang), {
         year: 'numeric', month: '2-digit', day: '2-digit',
         hour: '2-digit', minute: '2-digit', second: '2-digit'
       }).replace(/\//g, '-');
@@ -127,7 +172,7 @@ function initPublicFishpond() {
       const isSelected = selectedFishes.has(key);
 
       card.innerHTML = `
-        <div class="fish-name" title="${fish.name}">${fish.name}</div>
+        <div class="fish-name" title="${getFishName(fish.name, lang || currentLang)}">${getFishName(fish.name, lang || currentLang)}</div>
         <div class="fish-weight">${fish.weight.toFixed(2)} kg</div>
         <div class="rarity" title="${texts.rarity}：${fish.rarity}">${'★'.repeat(fish.rarity)}</div>
         <div class="timestamp">${timeStr}</div>

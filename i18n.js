@@ -8,6 +8,7 @@ function updateLanguage(lang) {
     currentLang = lang;
     const langCode = getLangCode(lang);
     document.documentElement.lang = langCode;
+    console.log('updateLanguage called with lang:', lang, 'currentLang:', currentLang);
     
     const texts = i18nData[lang];
     

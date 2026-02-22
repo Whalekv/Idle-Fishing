@@ -7,7 +7,7 @@
         return;
     }
 
-    const { FISH_TABLE, getRandomInRange} = window.HappyFishingConfig;
+    const { FISH_TABLE, getRandomInRange, getFishName} = window.HappyFishingConfig;
 
     // 计算总权重
     const TOTAL_WEIGHT = FISH_TABLE.reduce((sum, fish) => sum + (7 - fish.rarity), 0);
@@ -49,7 +49,7 @@
         );
 
         return {
-            name: baseFish.name,
+            name: getFishName(baseFish.name),
             rarity: baseFish.rarity,
             weight: weight,
             sinkTimeMin: baseFish.sinkTimeMin,

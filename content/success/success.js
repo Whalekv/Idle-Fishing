@@ -3,7 +3,7 @@
     window.successExists = true;
 
     let successWin = null;
-    let currentLang = 'zh';
+    let successLang = 'zh';
 
     async function getLanguage() {
         try {
@@ -16,15 +16,15 @@
     }
 
     function getText(key) {
-        const langCode = currentLang === 'zh' ? 'zh-CN' : 'en-US';
-        if (typeof i18nData !== 'undefined' && i18nData[currentLang]) {
-            return i18nData[currentLang][key] || key;
+        const langCode = successLang === 'zh' ? 'zh-CN' : 'en-US';
+        if (typeof i18nData !== 'undefined' && i18nData[successLang]) {
+            return i18nData[successLang][key] || key;
         }
         return key;
     }
 
     async function createSuccessWin(){
-        currentLang = await getLanguage();
+        successLang = await getLanguage();
 
         successWin = document.createElement('div');
         successWin.innerHTML = `

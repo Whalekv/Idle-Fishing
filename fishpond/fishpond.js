@@ -24,6 +24,47 @@ function initFishpond() {
   let contributeQueue = [];
   let isContributing = false;
 
+  const FISH_NAME_MAP = {
+    zh: {
+      "shrimp": "小虾米",
+      "crucian": "鲫鱼",
+      "grass": "草鱼",
+      "black": "青鱼",
+      "silver": "鲢鱼",
+      "golden": "金龙鱼"
+    },
+    en: {
+      "shrimp": "Shrimp",
+      "crucian": "Crucian Carp",
+      "grass": "Grass Carp",
+      "black": "Black Carp",
+      "silver": "Silver Carp",
+      "golden": "Golden Dragonfish"
+    }
+  };
+
+  const FISH_KEY_MAP = {
+    "小虾米": "shrimp",
+    "鲫鱼": "crucian",
+    "草鱼": "grass",
+    "青鱼": "black",
+    "鲢鱼": "silver",
+    "金龙鱼": "golden",
+    "Shrimp": "shrimp",
+    "Crucian Carp": "crucian",
+    "Grass Carp": "grass",
+    "Black Carp": "black",
+    "Silver Carp": "silver",
+    "Golden Dragonfish": "golden"
+  };
+
+  function getFishName(fishName, lang) {
+    const current = lang || currentLang || 'zh';
+    const fishKey = FISH_KEY_MAP[fishName] || fishName;
+    const result = FISH_NAME_MAP[current]?.[fishKey] || FISH_NAME_MAP.zh[fishKey] || fishName;
+    return result;
+  }
+
   async function initializeLanguage() {
     try {
       const result = await chrome.storage.local.get('language');
@@ -39,8 +80,9 @@ function initFishpond() {
 
   chrome.storage.onChanged.addListener((changes, area) => {
     if (area === 'local' && changes.language) {
-      updateLanguage(changes.language.newValue);
-      renderFishes();
+      const newLang = changes.language.newValue;
+      updateLanguage(newLang);
+      renderFishes(newLang);
     }
   });
 
@@ -57,11 +99,11 @@ function initFishpond() {
     }
   }
 
-  function renderFishes() {
+  function renderFishes(lang) {
     const list = document.getElementById('fishList');
     const totalEl = document.getElementById('total');
     const emptyHint = document.getElementById('emptyHint');
-    const texts = i18n[currentLang];
+    const texts = i18n[lang || currentLang];
 
     totalEl.textContent = allFishes.length;
 
@@ -82,13 +124,13 @@ function initFishpond() {
 
       const li = document.createElement('li');
 
-      const timeStr = new Date(fish.timestamp).toLocaleString(getLangCode(currentLang), {
+      const timeStr = new Date(fish.timestamp).toLocaleString(getLangCode(lang || currentLang), {
         year: 'numeric', month: '2-digit', day: '2-digit',
         hour: '2-digit', minute: '2-digit', second: '2-digit'
       }).replace(/\//g, '-');
 
       li.innerHTML = `
-        <div class="fish-name">${fish.name}</div>
+        <div class="fish-name">${getFishName(fish.name, lang || currentLang)}</div>
         <div class="fish-weight">${texts.weight}：${fish.weight.toFixed(2)} kg</div>
         <div class="rarity">${'★'.repeat(fish.rarity)} <small style="opacity:0.7;">${fish.rarity}/6</small></div>
         <div class="timestamp">${texts.capturedTime}：${timeStr}</div>
@@ -101,7 +143,7 @@ function initFishpond() {
 
       li.querySelector('.contribute-btn').addEventListener('click', () => {
         const confirmMsg = texts.confirmContribute
-          .replace('{name}', fish.name)
+          .replace('{name}', getFishName(fish.name, lang || currentLang))
           .replace('{weight}', fish.weight.toFixed(2));
         if (confirm(confirmMsg)) {
           contributeFish(fish, originalIndex);
@@ -110,7 +152,7 @@ function initFishpond() {
 
       li.querySelector('.delete-btn').addEventListener('click', () => {
         const confirmMsg = texts.confirmDelete
-          .replace('{name}', fish.name)
+          .replace('{name}', getFishName(fish.name, lang || currentLang))
           .replace('{weight}', fish.weight.toFixed(2));
         if (confirm(confirmMsg)) {
           deleteFish(originalIndex);
@@ -181,7 +223,7 @@ function initFishpond() {
       let publicFishes = JSON.parse(file.content || '[]');
 
       if (publicFishes.some(f => f.signature === fish.signature && f.timestamp === fish.timestamp)) {
-        alert(texts.contributeExists.replace('{name}', fish.name));
+        alert(texts.contributeExists.replace('{name}', getFishName(fish.name)));
         shouldDeleteLocal = true;
       } else {
         publicFishes.push(fish);
@@ -208,7 +250,7 @@ function initFishpond() {
         }
 
         alert(texts.contributeSuccess
-          .replace('{name}', fish.name)
+          .replace('{name}', getFishName(fish.name))
           .replace('{weight}', fish.weight.toFixed(2)));
         shouldDeleteLocal = true;
       }
@@ -216,7 +258,7 @@ function initFishpond() {
     } catch (err) {
       console.error(err);
       alert(texts.contributeFail
-        .replace('{name}', fish.name)
+        .replace('{name}', getFishName(fish.name))
         .replace('{error}', err.message));
     } finally {
       if (shouldDeleteLocal) {
