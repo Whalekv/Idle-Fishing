@@ -46,7 +46,10 @@ const i18nData = {
     alertNoSign: "请先签名！",
     langBtn: "EN",
     clickToSelect: "点击选择钓鱼位置",
-    allTabsSync: "所有标签页将同步"
+    allTabsSync: "所有标签页将同步",
+    fishingSuccess: "钓鱼成功！",
+    weightLabel: "重量",
+    rarityLabel: "稀有度"
   },
   en: {
     pageTitle: "My Fishpond - Happy Fishing",
@@ -95,7 +98,10 @@ const i18nData = {
     alertNoSign: "Please sign first!",
     langBtn: "中",
     clickToSelect: "Click to select fishing position",
-    allTabsSync: "All tabs will sync"
+    allTabsSync: "All tabs will sync",
+    fishingSuccess: "Fishing Success!",
+    weightLabel: "Weight",
+    rarityLabel: "Rarity"
   }
 };
 

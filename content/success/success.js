@@ -3,17 +3,37 @@
     window.successExists = true;
 
     let successWin = null;
-    //钓鱼成功窗口
-    function createSuccessWin(){
+    let currentLang = 'zh';
+
+    async function getLanguage() {
+        try {
+            const result = await chrome.storage.local.get('language');
+            return result.language || 'zh';
+        } catch (error) {
+            console.error("读取语言设置失败:", error);
+            return 'zh';
+        }
+    }
+
+    function getText(key) {
+        const langCode = currentLang === 'zh' ? 'zh-CN' : 'en-US';
+        if (typeof i18nData !== 'undefined' && i18nData[currentLang]) {
+            return i18nData[currentLang][key] || key;
+        }
+        return key;
+    }
+
+    async function createSuccessWin(){
+        currentLang = await getLanguage();
 
         successWin = document.createElement('div');
         successWin.innerHTML = `
         <div style="margin-top:120px; line-height:1.4">
-            <div style="font-size:48px">钓鱼成功！</div>
+            <div style="font-size:48px">${getText('fishingSuccess')}</div>
             ${window.lastCaughtFish ? `
             <div style="font-size:36px; margin:20px 0">${window.lastCaughtFish.name}</div>
-            <div style="font-size:28px">重量：${window.lastCaughtFish.weight} kg</div>
-            <div style="font-size:24px; color:#fffa">稀有度：${'★'.repeat(window.lastCaughtFish.rarity)} ${window.lastCaughtFish.rarity}/6</div>
+            <div style="font-size:28px">${getText('weightLabel')}：${window.lastCaughtFish.weight} kg</div>
+            <div style="font-size:24px; color:#fffa">${getText('rarityLabel')}：${'★'.repeat(window.lastCaughtFish.rarity)} ${window.lastCaughtFish.rarity}/6</div>
             ` : ''}
         </div>
         `;
